@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Event | OHM</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-base: #000000;
+            --bg-panel: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --primary: #ffffff;
+            --accent: #ff4757;
+            --border: rgba(255, 255, 255, 0.1);
+            --input-bg: #111111;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            background: transparent;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .submit-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: #161616;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #status-msg {
+            margin-top: 16px;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+
+        #status-msg.success { color: #2ed573; display: block; }
+        #status-msg.error { color: #ff4757; display: block; }
+    </style>
+</head>
+<body>
+    <div class="submit-card">
+        <div class="header">
+            <h1>Submit an Event</h1>
+            <p>Fill out the details below. Our team will review and publish it shortly.</p>
+        </div>
+
+        <form id="submit-form">
+            <div class="form-group">
+                <label>Event Title</label>
+                <input type="text" id="title" placeholder="E.g. Summer Music Festival" required>
+            </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="tag">
+                        <option value="Music">Music</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Workshop">Workshop</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Image URL (Optional)</label>
+                    <input type="url" id="image_url" placeholder="https://...">
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label>Date & Time</label>
+                    <input type="datetime-local" id="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label>End Time (Optional)</label>
+                    <input type="datetime-local" id="end_time">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Venue Name</label>
+                <input type="text" id="location_name" placeholder="E.g. Empire Underground" required>
+            </div>
+
+            <div class="form-group">
+                <label>Full Address</label>
+                <input type="text" id="address" placeholder="93 N Pearl St, Albany, NY">
+            </div>
+
+
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="description" rows="3" placeholder="Deep dark techno event..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Ticket URL</label>
+                <input type="url" id="ticket_url" placeholder="https://eventbrite.com/...">
+            </div>
+
+            <button type="submit" class="submit-btn" id="submit-btn">Submit for Review</button>
+            <div id="status-msg"></div>
+        </form>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        document.getElementById('submit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-btn');
+            const msg = document.getElementById('status-msg');
+            
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            msg.style.display = 'none';
+            msg.className = '';
+
+            try {
+                const eventData = {
+                    title: document.getElementById('title').value,
+                    tag: document.getElementById('tag').value,
+                    image_url: document.getElementById('image_url').value || null,
+                    start_time: new Date(document.getElementById('start_time').value).toISOString(),
+                    end_time: document.getElementById('end_time').value ? new Date(document.getElementById('end_time').value).toISOString() : null,
+                    location_name: document.getElementById('location_name').value,
+                    address: document.getElementById('address').value || null,
+                    description: document.getElementById('description').value || null,
+                    ticket_url: document.getElementById('ticket_url').value || null,
+                    status: 'pending' // Force pending status!
+                };
+
+                const { data, error } = await _supabase.from('events').insert([eventData]);
+
+                if (error) throw error;
+
+                msg.textContent = 'Success! Your event has been submitted for review.';
+                msg.className = 'success';
+                document.getElementById('submit-form').reset();
+
+            } catch (err) {
+                console.error(err);
+                msg.textContent = 'Failed to submit event: ' + err.message;
+                msg.className = 'error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit for Review';
+            }
+        });
+    </script>
+</body>
+</html>

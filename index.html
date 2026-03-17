@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | OHM Events</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        :root {
+            --bg-base: #000000;
+            --bg-panel: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border-subtle: #222222;
+            --accent: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-hover: rgba(255, 255, 255, 0.1);
+            --danger: #ff4d4d;
+            --success: #00ff88;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+
+        .auth-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            padding: 48px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 400px;
+            width: 95%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 32px 24px;
+            }
+        }
+
+        .auth-logo {
+            width: 80px;
+            margin-bottom: 24px;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .auth-btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+        }
+
+        /* --- DASHBOARD SCREEN --- */
+        #dashboard-screen {
+            display: none; /* Hidden by default */
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Sidebar Responsive */
+        @media (max-width: 1024px) {
+            #dashboard-screen {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 2000;
+                transition: left 0.3s ease;
+                box-shadow: 20px 0 40px rgba(0,0,0,0.5);
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .mobile-header {
+                display: flex;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(4px);
+                z-index: 1500;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            border-right: 1px solid var(--border-subtle);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-panel);
+        }
+
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 48px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav {
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--glass-bg);
+            color: var(--text-main);
+        }
+
+        .sidebar-footer {
+            padding-top: 24px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            font-size: 13px;
+        }
+
+        .user-email {
+            color: var(--text-muted);
+            font-size: 11px;
+            display: block;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--danger);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 77, 77, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 24px;
+            }
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 24px;
+                margin-bottom: 32px;
+            }
+            .header-title h1 {
+                font-size: 24px;
+            }
+            .add-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 48px;
+        }
+
+        .header-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .add-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            padding: 24px;
+            border-radius: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* Events Table */
+        .event-list-container {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .events-table th {
+            padding: 16px 24px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .events-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 14px;
+        }
+
+        .events-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .events-table tr:hover {
+            background-color: var(--glass-bg);
+        }
+
+        .event-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .tag-pill {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .action-btn:hover {
+            color: var(--text-main);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px;
+            padding: 32px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .modal {
+                padding: 24px;
+                border-radius: 20px;
+                max-height: 95vh;
+            }
+            .modal-overlay {
+                padding: 12px;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-subtle);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--text-muted);
+            background: rgba(255,255,255,0.08);
+        }
+
+        .form-actions {
+            margin-top: 32px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-submit {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        /* Skeleton loader */
+        .skeleton {
+            background: linear-gradient(90deg, #111 25%, #222 50%, #111 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Toasts */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--success);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none; /* Simple mobile hide for now */
+            }
+        }
+
+        /* --- MULTI-VIEW STYLES --- */
+        .view-switcher {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--bg-panel);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            width: fit-content;
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .view-btn.active {
+            background: var(--glass-bg);
+            color: var(--text-main);
+        }
+
+        .view-btn:hover:not(.active) {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Grid View */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .event-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 180px;
+            background: #111;
+            object-fit: cover;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .card-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-tag {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .card-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* Map View */
+        #map-view-container {
+            height: 600px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* Calendar View */
+        .calendar-container {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        /* Localhost Calendar Overrides */
+        .ohm-calendar-layout { max-width: 100% !important; }
+        .ohm-calendar-details { background-color: var(--bg-panel) !important; border: 1px solid var(--border-subtle); }
+        .ohm-card { background-color: #050505 !important; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+            </div>
+            <h1 class="auth-title">OHM Events</h1>
+            <p class="auth-subtitle">Team Management Dashboard</p>
+            
+            <form id="login-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="text-align: left;">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="team@ohm.com">
+                </div>
+                <div style="text-align: left;">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="auth-btn">
+                    Login to Dashboard
+                </button>
+            </form>
+            <p style="margin-top: 24px; font-size: 12px; color: var(--text-muted);">
+                Don't have an account? Contact your administrator.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="sidebar-logo" style="margin-bottom: 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            OHM
+        </div>
+        <button class="hamburger" id="mobile-toggle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboard-screen">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                OHM Dashboard
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" id="nav-events">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Events List
+                </a>
+                <a class="nav-item" id="nav-widgets">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Widget Manager
+                </a>
+                <a class="nav-item" id="nav-pending">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    Pending Events
+                    <span id="pending-badge" style="display: none; background: #ff4757; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: auto;">0</span>
+                </a>
+                <a class="nav-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Help Center
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="user-avatar"></div>
+                    <div class="user-info">
+                        <span id="user-name">Team Member</span>
+                        <span class="user-email" id="user-email">email@example.com</span>
+                    </div>
+                </div>
+                <button class="logout-btn" id="logout-btn">Log out</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Events Panel -->
+            <div id="events-panel">
+                <header class="content-header">
+                    <div class="header-title">
+                        <h1>Events</h1>
+                        <p>Manage and organize all your upcoming events.</p>
+                    </div>
+                    <button class="add-btn" id="open-add-modal">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Create Event
+                    </button>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Events</div>
+                        <div class="stat-value" id="total-events-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Upcoming This Month</div>
+                        <div class="stat-value" id="upcoming-events-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Venues</div>
+                        <div class="stat-value" id="active-venues-count">0</div>
+                    </div>
+                </div>
+
+                <div class="view-switcher" id="view-switcher">
+                    <button class="view-btn active" data-view="table">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        Table
+                    </button>
+                    <button class="view-btn" data-view="grid">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Grid
+                    </button>
+                    <button class="view-btn" data-view="calendar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        Calendar
+                    </button>
+                    <button class="view-btn" data-view="map">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        Map
+                    </button>
+                </div>
+
+                <div id="events-view-content">
+                    <div class="event-list-container">
+                        <table class="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Event Details</th>
+                                    <th>Tag</th>
+                                    <th>Date & Time</th>
+                                    <th>Venue</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-tbody">
+                                <!-- Content loaded dynamicially -->
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                                        Loading events...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Widgets Panel -->
+            <div id="widgets-panel" style="display: none;">
+                <header class="content-header">
+                    <div class="header-title">
+                        <h1>Widget Manager</h1>
+                        <p>Copy embed codes to use widgets on your website.</p>
+                    </div>
+                </header>
+
+                <div class="stats-grid" id="widget-grid">
+                    <!-- Widget Card: Calendar -->
+                    <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            </div>
+                            <div style="font-weight: 600;">Events Calendar</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A responsive monthly grid with built-in navigation and event dots.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('calendar')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Preview
+                            </button>
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('calendar')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Widget Card: Map -->
+                    <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            </div>
+                            <div style="font-weight: 600;">Interactive Map</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A Leaflet-powered map showing event locations with custom markers.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('map')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Preview
+                            </button>
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('map')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Widget Card: Cards -->
+                    <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            </div>
+                            <div style="font-weight: 600;">Event Cards</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A searchable grid of event cards with filters and direct ticket links.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('cards')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Preview
+                            </button>
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('cards')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Widget Card: Submit Form -->
+                    <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg>
+                            </div>
+                            <div style="font-weight: 600;">Submission Form</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A public form for users to submit new events for your review.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('submit')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Preview
+                            </button>
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('submit')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event-list-container" style="padding: 32px; margin-top: 32px;">
+                    <h3 style="margin-bottom: 16px;">How to Embed</h3>
+                    <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+                        1. Select the widget you want to use above.<br>
+                        2. Click "Copy Embed Code" to copy the snippet to your clipboard.<br>
+                        3. Paste the code into a "Custom Code" or "Embed" block in Webflow or any other website builder.<br>
+                        4. The widget will automatically sync with your Supabase data.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- PREVIEW MODAL -->
+    <div class="modal-overlay" id="preview-modal-overlay">
+        <div class="modal" style="max-width: 1000px; height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="preview-title">Widget Preview</h2>
+                <button class="close-modal" id="close-preview">&times;</button>
+            </div>
+            <div id="preview-container" style="flex-grow: 1; background: #000; border-radius: 12px; overflow: hidden;">
+                <iframe id="preview-iframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT MODAL -->
+    <div class="modal-overlay" id="event-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Create New Event</h2>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <form id="event-form">
+                <input type="hidden" id="event-id">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="title">Event Title</label>
+                        <input type="text" id="title" required placeholder="e.g. Techno Night Volume 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="tag">Tag</label>
+                        <select id="tag">
+                            <option value="Music">Music</option>
+                            <option value="Art">Art</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Community">Community</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="image_url">Image URL</label>
+                        <input type="url" id="image_url" placeholder="https://unsplash.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label for="start_time">Start Date & Time</label>
+                        <input type="datetime-local" id="start_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">End Date & Time</label>
+                        <input type="datetime-local" id="end_time">
+                    </div>
+                    <div class="form-group">
+                        <label for="location_name">Venue Name</label>
+                        <input type="text" id="location_name" placeholder="e.g. Empire Underground">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Full Address</label>
+                        <input type="text" id="address" placeholder="93 N Pearl St, Albany, NY">
+                    </div>
+                    <div class="form-group">
+                        <label for="lat">Latitude (for map)</label>
+                        <input type="number" step="any" id="lat" placeholder="42.6526">
+                    </div>
+                    <div class="form-group">
+                        <label for="lng">Longitude (for map)</label>
+                        <input type="number" step="any" id="lng" placeholder="-73.7562">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" rows="4" placeholder="Deep dark techno event..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="ticket_url">Ticket URL</label>
+                        <input type="url" id="ticket_url" placeholder="https://eventbrite.com/...">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-modal">Cancel</button>
+                    <button type="submit" class="btn-submit" id="save-btn">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Changes saved successfully!</div>
+
+    <script>
+        // CONFIG
+        const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // State
+        let user = null;
+        let allEvents = [];
+        let currentView = 'table';
+        let currentTab = 'events'; // 'events', 'widgets', 'pending'
+        let map = null;
+        let calendarDate = new Date();
+
+        // DOM Elements
+        const authScreen = document.getElementById('auth-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
+        const loginForm = document.getElementById('login-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const eventsTbody = document.getElementById('events-tbody');
+        const eventModal = document.getElementById('event-modal-overlay');
+        const eventForm = document.getElementById('event-form');
+
+        // --- AUTH LOGIC ---
+        async function checkUser() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                user = session.user;
+                showDashboard();
+            } else {
+                showAuth();
+            }
+        }
+
+        function showAuth() {
+            authScreen.style.display = 'flex';
+            dashboardScreen.style.display = 'none';
+        }
+
+        function showDashboard() {
+            authScreen.style.display = 'none';
+            dashboardScreen.style.display = 'grid';
+            
+            // Update UI with user info
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
+            if (user.user_metadata?.avatar_url) {
+                document.getElementById('user-avatar').innerHTML = `<img src="${user.user_metadata.avatar_url}" alt="avatar">`;
+            } else {
+                document.getElementById('user-avatar').innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#333; color:#fff; font-size:12px; font-weight:700;">${user.email[0].toUpperCase()}</div>`;
+            }
+
+            fetchEvents();
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = loginForm.querySelector('button');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            const { data, error } = await _supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                alert('Login failed: ' + error.message);
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login to Dashboard';
+            } else {
+                user = data.user;
+                showDashboard();
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await _supabase.auth.signOut();
+            window.location.reload();
+        });
+
+        // --- DATA LOGIC ---
+        async function fetchEvents() {
+            const { data, error } = await _supabase
+                .from('events')
+                .select('*')
+                .order('start_time', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching events:', error);
+                return;
+            }
+
+            allEvents = data;
+            
+            // Filter by tab
+            const pending = allEvents.filter(e => e.status === 'pending');
+            
+            // Update badge
+            const badge = document.getElementById('pending-badge');
+            if (pending.length > 0) {
+                badge.textContent = pending.length;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            renderEvents();
+            updateStats();
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('events-view-content');
+            
+            // Get data based on tab
+            const dataToRender = currentTab === 'pending' 
+                ? allEvents.filter(e => e.status === 'pending')
+                : allEvents.filter(e => e.status !== 'pending');
+
+            if (currentTab === 'pending') {
+                container.innerHTML = `
+                    <div class="event-list-container">
+                        <table class="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Event Details</th>
+                                    <th>Tag</th>
+                                    <th>Date & Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-tbody"></tbody>
+                        </table>
+                    </div>
+                `;
+                renderPendingView(dataToRender);
+                return;
+            }
+
+            if (currentView === 'table') {
+                container.innerHTML = `
+                    <div class="event-list-container">
+                        <table class="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Event Details</th>
+                                    <th>Tag</th>
+                                    <th>Date & Time</th>
+                                    <th>Venue</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-tbody"></tbody>
+                        </table>
+                    </div>
+                `;
+                renderTableView(dataToRender);
+            } else if (currentView === 'grid') {
+                container.innerHTML = `<div class="events-grid" id="events-grid"></div>`;
+                renderGridView(dataToRender);
+            } else if (currentView === 'calendar') {
+                container.innerHTML = `
+                    <div class="calendar-container">
+                        <div class="ohm-calendar-layout" id="ohm-calendar-layout">
+                            <div class="ohm-calendar-widget" id="ohm-calendar">
+                                <div class="ohm-calendar-header">
+                                    <div class="ohm-calendar-title" id="ohm-month-year"></div>
+                                    <div class="ohm-nav-btns">
+                                        <button class="ohm-icon-btn" id="ohm-prev"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
+                                        <button class="ohm-icon-btn" id="ohm-next"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+                                    </div>
+                                </div>
+                                <div class="ohm-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+                                <div class="ohm-days-grid" id="ohm-grid"></div>
+                            </div>
+                            <div class="ohm-calendar-details" id="ohm-calendar-details">
+                                <div class="ohm-calendar-details-header">
+                                    <div class="ohm-calendar-details-title" id="ohm-details-title">Upcoming Events</div>
+                                </div>
+                                <div class="ohm-calendar-details-content" id="ohm-details-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                renderCalendarView(dataToRender);
+            } else if (currentView === 'map') {
+                container.innerHTML = `<div id="map-view-container"></div>`;
+                renderMapView(dataToRender);
+            }
+        }
+
+        function renderTableView(events) {
+            const tbody = document.getElementById('events-tbody');
+            if (events.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 48px; color: var(--text-muted);">No events found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = events.map(event => {
+                const startDate = new Date(event.start_time);
+                const dateStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const timeStr = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                return `
+                    <tr data-id="${event.id}">
+                        <td>
+                            <div style="font-weight: 600;">${event.title}</div>
+                            <div class="event-meta">${event.description ? event.description.substring(0, 40) + '...' : ''}</div>
+                        </td>
+                        <td><span class="tag-pill">${event.tag || 'Music'}</span></td>
+                        <td><div>${dateStr}</div><div class="event-meta">${timeStr}</div></td>
+                        <td><div>${event.location_name || 'Unknown'}</div><div class="event-meta">${event.address ? event.address.split(',')[0] : ''}</div></td>
+                        <td>
+                            <div class="actions">
+                                <button class="action-btn edit" onclick="editEvent('${event.id}')">Edit</button>
+                                <button class="action-btn delete" onclick="deleteEvent('${event.id}')">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderGridView(events) {
+            const grid = document.getElementById('events-grid');
+            if (events.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: var(--text-muted);">No events found.</div>`;
+                return;
+            }
+
+            grid.innerHTML = events.map(event => {
+                const startDate = new Date(event.start_time);
+                return `
+                    <div class="event-card">
+                        ${event.image_url ? `<img src="${event.image_url}" class="card-image">` : `<div class="card-image" style="background: #111;"></div>`}
+                        <div class="card-content">
+                            <div class="card-tag">${event.tag || 'Music'}</div>
+                            <div class="card-title">${event.title}</div>
+                            <div class="card-meta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                            <div class="card-meta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                ${event.location_name || 'Unknown'}
+                            </div>
+                            <div class="card-actions">
+                                <button class="action-btn edit" onclick="editEvent('${event.id}')">Edit</button>
+                                <button class="action-btn delete" onclick="deleteEvent('${event.id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCalendarView(events) {
+            const grid = document.getElementById('ohm-grid');
+            const monthYear = document.getElementById('ohm-month-year');
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            monthYear.textContent = `${monthNames[month]} ${year}`;
+            grid.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            for (let i = 0; i < 42; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'ohm-day';
+                if (i < firstDay) {
+                    dayEl.textContent = daysInPrevMonth - firstDay + i + 1;
+                    dayEl.classList.add('other-month');
+                } else if (i >= firstDay && i < firstDay + daysInMonth) {
+                    const dayNum = i - firstDay + 1;
+                    dayEl.textContent = dayNum;
+                    dayEl.classList.add('active-month');
+                    const dayEvents = events.filter(e => {
+                        const d = new Date(e.start_time);
+                        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === dayNum;
+                    });
+                    if (dayEvents.length > 0) {
+                        dayEl.classList.add('has-events');
+                        dayEl.onclick = () => showCalendarDayEvents(dayNum, dayEvents);
+                    }
+                } else {
+                    dayEl.textContent = i - firstDay - daysInMonth + 1;
+                    dayEl.classList.add('other-month');
+                }
+                grid.appendChild(dayEl);
+            }
+
+            document.getElementById('ohm-prev').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendarView(events); };
+            document.getElementById('ohm-next').onclick = () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendarView(events); };
+        }
+
+        function renderMapView(events) {
+            if (map) map.remove();
+            map = L.map('map-view-container').setView([42.6526, -73.7562], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+            const markers = [];
+            events.forEach(event => {
+                if (event.lat && event.lng) {
+                    const marker = L.marker([event.lat, event.lng])
+                        .addTo(map)
+                        .bindPopup(`
+                            <div style="color: #fff; background: #000; padding: 10px; border-radius: 8px;">
+                                <div style="font-weight: 700; margin-bottom: 4px;">${event.title}</div>
+                                <div style="font-size: 12px; color: #888;">${event.location_name}</div>
+                                <button onclick="editEvent('${event.id}')" style="margin-top: 8px; background: #fff; color: #000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Edit</button>
+                            </div>
+                        `);
+                    markers.push([event.lat, event.lng]);
+                }
+            });
+            if (markers.length > 0) map.fitBounds(L.latLngBounds(markers));
+        }
+
+        function renderPendingView(events) {
+            const tbody = document.getElementById('events-tbody');
+            if (events.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 48px; color: var(--text-muted);">No pending submissions.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = events.map(event => {
+                const startDate = new Date(event.start_time);
+                return `
+                    <tr data-id="${event.id}">
+                        <td>
+                            <div style="font-weight: 600;">${event.title}</div>
+                            <div class="event-meta">${event.location_name || 'No location'}</div>
+                        </td>
+                        <td><span class="tag-pill">${event.tag || 'Music'}</span></td>
+                        <td>
+                            <div>${startDate.toLocaleDateString()}</div>
+                            <div class="event-meta">${startDate.toLocaleTimeString()}</div>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button class="action-btn" style="color: var(--success);" onclick="approveEvent('${event.id}')">Approve</button>
+                                <button class="action-btn edit" onclick="editEvent('${event.id}')">Edit</button>
+                                <button class="action-btn delete" onclick="deleteEvent('${event.id}')">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function approveEvent(id) {
+            const { error } = await _supabase
+                .from('events')
+                .update({ status: 'published' })
+                .eq('id', id);
+
+            if (error) {
+                alert('Error approving event: ' + error.message);
+            } else {
+                showToast('Event approved and published!');
+                fetchEvents();
+            }
+        }
+        
+        window.approveEvent = approveEvent;
+
+        // View Switcher Listeners
+        document.getElementById('view-switcher').addEventListener('click', (e) => {
+            const btn = e.target.closest('.view-btn');
+            if (!btn) return;
+            
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentView = btn.dataset.view;
+            renderEvents();
+        });
+
+        function updateStats() {
+            document.getElementById('total-events-count').textContent = allEvents.length;
+            
+            const now = new Date();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const upcoming = allEvents.filter(e => {
+                const d = new Date(e.start_time);
+                return d >= now && d <= endOfMonth;
+            });
+            document.getElementById('upcoming-events-count').textContent = upcoming.length;
+
+            const venues = new Set(allEvents.map(e => e.location_name).filter(Boolean));
+            document.getElementById('active-venues-count').textContent = venues.size;
+        }
+
+        // --- CRUD ACTIONS ---
+        async function saveEvent(e) {
+            e.preventDefault();
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            const id = document.getElementById('event-id').value;
+            const eventData = {
+                title: document.getElementById('title').value,
+                tag: document.getElementById('tag').value,
+                description: document.getElementById('description').value,
+                image_url: document.getElementById('image_url').value,
+                start_time: document.getElementById('start_time').value,
+                end_time: document.getElementById('end_time').value || null,
+                location_name: document.getElementById('location_name').value,
+                address: document.getElementById('address').value,
+                lat: document.getElementById('lat').value ? parseFloat(document.getElementById('lat').value) : null,
+                lng: document.getElementById('lng').value ? parseFloat(document.getElementById('lng').value) : null,
+                ticket_url: document.getElementById('ticket_url').value,
+            };
+
+            let error;
+            if (id) {
+                // Update
+                const { error: err } = await _supabase
+                    .from('events')
+                    .update(eventData)
+                    .eq('id', id);
+                error = err;
+            } else {
+                // Create
+                const { error: err } = await _supabase
+                    .from('events')
+                    .insert([eventData]);
+                error = err;
+            }
+
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Event';
+
+            if (error) {
+                alert('Error saving event: ' + error.message);
+            } else {
+                showToast(id ? 'Event updated!' : 'Event created!');
+                closeModal();
+                fetchEvents();
+            }
+        }
+
+        window.editEvent = function(id) {
+            const event = allEvents.find(e => e.id === id);
+            if (!event) return;
+
+            document.getElementById('modal-title').textContent = 'Edit Event';
+            document.getElementById('event-id').value = event.id;
+            document.getElementById('title').value = event.title || '';
+            document.getElementById('tag').value = event.tag || 'Music';
+            document.getElementById('description').value = event.description || '';
+            document.getElementById('image_url').value = event.image_url || '';
+            
+            // Format datetime-local (requires YYYY-MM-DDThh:mm)
+            if (event.start_time) {
+                document.getElementById('start_time').value = new Date(event.start_time).toISOString().slice(0, 16);
+            }
+            if (event.end_time) {
+                document.getElementById('end_time').value = new Date(event.end_time).toISOString().slice(0, 16);
+            } else {
+                document.getElementById('end_time').value = '';
+            }
+
+            document.getElementById('location_name').value = event.location_name || '';
+            document.getElementById('address').value = event.address || '';
+            document.getElementById('lat').value = event.lat || '';
+            document.getElementById('lng').value = event.lng || '';
+            document.getElementById('ticket_url').value = event.ticket_url || '';
+
+            openModal();
+        };
+
+        window.deleteEvent = async function(id) {
+            if (!confirm('Are you sure you want to delete this event?')) return;
+
+            const { error } = await _supabase
+                .from('events')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert('Error deleting event: ' + error.message);
+            } else {
+                showToast('Event deleted');
+                fetchEvents();
+            }
+        }
+
+        // --- UI HELPERS ---
+        function openModal() {
+            eventModal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            eventModal.style.display = 'none';
+            eventForm.reset();
+            document.getElementById('event-id').value = '';
+            document.getElementById('modal-title').textContent = 'Create New Event';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Local Navigation Logic
+        const navEvents = document.getElementById('nav-events');
+        const navWidgets = document.getElementById('nav-widgets');
+        const navPending = document.getElementById('nav-pending');
+        const eventsPanel = document.getElementById('events-panel');
+        const widgetsPanel = document.getElementById('widgets-panel');
+        const viewSwitcher = document.getElementById('view-switcher');
+
+        function updateSideNav(activeId) {
+            [navEvents, navWidgets, navPending].forEach(nav => nav.classList.remove('active'));
+            document.getElementById(activeId).classList.add('active');
+        }
+
+        navEvents.addEventListener('click', () => {
+            currentTab = 'events';
+            updateSideNav('nav-events');
+            eventsPanel.style.display = 'block';
+            widgetsPanel.style.display = 'none';
+            viewSwitcher.style.display = 'flex';
+            document.querySelector('.header-title h1').textContent = 'Events';
+            renderEvents();
+            if (window.innerWidth <= 1024) closeMobileMenu();
+        });
+
+        navWidgets.addEventListener('click', () => {
+            currentTab = 'widgets';
+            updateSideNav('nav-widgets');
+            eventsPanel.style.display = 'none';
+            widgetsPanel.style.display = 'block';
+            if (window.innerWidth <= 1024) closeMobileMenu();
+        });
+
+        navPending.addEventListener('click', () => {
+            currentTab = 'pending';
+            updateSideNav('nav-pending');
+            eventsPanel.style.display = 'block';
+            widgetsPanel.style.display = 'none';
+            viewSwitcher.style.display = 'none';
+            document.querySelector('.header-title h1').textContent = 'Pending Submissions';
+            renderEvents();
+            if (window.innerWidth <= 1024) closeMobileMenu();
+        });
+
+        // Mobile Menu Toggle
+        const mobileToggle = document.getElementById('mobile-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function openMobileMenu() {
+            sidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+        }
+
+        function closeMobileMenu() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        }
+
+        mobileToggle.addEventListener('click', openMobileMenu);
+        sidebarOverlay.addEventListener('click', closeMobileMenu);
+
+        // Widget Codes (simplified versions of the files)
+        const WIDGET_CODES = {
+            calendar: `<!-- OHM Calendar Widget -->
+<div id="ohm-calendar-container"></div>
+<script src="${window.location.origin}/widget-calendar.html" data-container="#ohm-calendar-container"><\/script>`,
+            map: `<!-- OHM Map Widget -->
+<div id="ohm-map-container" style="height: 500px;"></div>
+<script src="${window.location.origin}/widget-map.html" data-container="#ohm-map-container"><\/script>`,
+            cards: `<!-- OHM Event Cards Widget -->
+<div id="ohm-cards-container"></div>
+<script src="${window.location.origin}/widget-cards.html" data-container="#ohm-cards-container"><\/script>`
+        };
+
+        window.copyWidgetCode = async function(type) {
+            let code = "";
+            try {
+                const response = await fetch(`${type === 'calendar' ? 'widget-calendar.html' : type === 'map' ? 'widget-map.html' : type === 'cards' ? 'widget-cards.html' : 'widget-submit.html'}`);
+                code = await response.text();
+            } catch (e) {
+                // Fallback to minimal loader if fetch fails
+                code = `<!-- OHM ${type} Widget -->\n<iframe src="${window.location.origin}/widget-${type}.html" width="100%" height="600" frameborder="0"></iframe>`;
+            }
+
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Embed code copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy code. Please try manual copy.');
+            });
+        };
+
+        window.previewWidget = function(type) {
+            const iframe = document.getElementById('preview-iframe');
+            const title = document.getElementById('preview-title');
+            const overlay = document.getElementById('preview-modal-overlay');
+            
+            let url = "";
+            let name = "";
+            switch(type) {
+                case 'calendar': url = "widget-calendar.html"; name = "Events Calendar"; break;
+                case 'map': url = "widget-map.html"; name = "Interactive Map"; break;
+                case 'cards': url = "widget-cards.html"; name = "Event Cards"; break;
+                case 'submit': url = "widget-submit.html"; name = "Submission Form"; break;
+            }
+
+            title.textContent = `Preview: ${name}`;
+            iframe.src = url;
+            overlay.style.display = 'flex';
+        };
+
+        function closePreview() {
+            const overlay = document.getElementById('preview-modal-overlay');
+            const iframe = document.getElementById('preview-iframe');
+            overlay.style.display = 'none';
+            iframe.src = ""; // Stop any loading/audio/etc.
+        }
+
+        // Event Listeners for Modal
+        document.getElementById('open-add-modal').addEventListener('click', openModal);
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        document.getElementById('cancel-modal').addEventListener('click', closeModal);
+        document.getElementById('close-preview').addEventListener('click', closePreview);
+        eventForm.addEventListener('submit', saveEvent);
+
+        // Close modals on overlay click
+        eventModal.addEventListener('click', (e) => {
+            if (e.target === eventModal) closeModal();
+        });
+        document.getElementById('preview-modal-overlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('preview-modal-overlay')) closePreview();
+        });
+
+        // Init
+        checkUser();
+
+        // Listen for auth changes
+        _supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                user = session.user;
+                showDashboard();
+            } else if (event === 'SIGNED_OUT') {
+                showAuth();
+            }
+        });
+    </script>
+</body>
+</html>
