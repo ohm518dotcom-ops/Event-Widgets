@@ -1653,17 +1653,20 @@
         mobileToggle.addEventListener('click', openMobileMenu);
         sidebarOverlay.addEventListener('click', closeMobileMenu);
 
+        // Base URL calculation to support GitHub Pages sub-directory hosting
+        const baseUrl = window.location.href.split('?')[0].replace(/\/(index\.html)?$/, '');
+
         // Widget Codes (simplified versions of the files)
         const WIDGET_CODES = {
             calendar: `<!-- OHM Calendar Widget -->
 <div id="ohm-calendar-container"></div>
-<script src="${window.location.origin}/widget-calendar.html" data-container="#ohm-calendar-container"><\/script>`,
+<script src="${baseUrl}/widget-calendar.html" data-container="#ohm-calendar-container"><\/script>`,
             map: `<!-- OHM Map Widget -->
 <div id="ohm-map-container" style="height: 500px;"></div>
-<script src="${window.location.origin}/widget-map.html" data-container="#ohm-map-container"><\/script>`,
+<script src="${baseUrl}/widget-map.html" data-container="#ohm-map-container"><\/script>`,
             cards: `<!-- OHM Event Cards Widget -->
 <div id="ohm-cards-container"></div>
-<script src="${window.location.origin}/widget-cards.html" data-container="#ohm-cards-container"><\/script>`
+<script src="${baseUrl}/widget-cards.html" data-container="#ohm-cards-container"><\/script>`
         };
 
         window.copyWidgetCode = async function(type) {
@@ -1673,7 +1676,7 @@
                 code = await response.text();
             } catch (e) {
                 // Fallback to minimal loader if fetch fails
-                code = `<!-- OHM ${type} Widget -->\n<iframe src="${window.location.origin}/widget-${type}.html" width="100%" height="600" frameborder="0"></iframe>`;
+                code = `<!-- OHM ${type} Widget -->\n<iframe src="${baseUrl}/widget-${type}.html" width="100%" height="600" frameborder="0"></iframe>`;
             }
 
             navigator.clipboard.writeText(code).then(() => {
