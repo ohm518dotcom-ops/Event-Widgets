@@ -1,86 +1,110 @@
 <!-- WEBFLOW EMBED: Event Cards Widget Starts -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
-body { background-color: #000; margin: 0; padding: 0; }
+body { background-color: #060606; margin: 0; padding: 24px; }
 /* Vibe & Variables */
 .ohm-cards-widget {
-    --surface-color: #111111;
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --border-color: #333333;
+    --surface-color: #0f0f0f;
+    --text-primary: #f0f0f0;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --border-color: #1a1a1a;
+    --border-hover: #333333;
     --font-family: 'Inter', sans-serif;
-    --border-radius: 16px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
     --transition: all 0.2s ease;
     
     font-family: var(--font-family);
     width: 100%;
     background-color: transparent;
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
 .ohm-cards-widget * { box-sizing: border-box; margin: 0; padding: 0; }
 
 .ohm-cards-header {
     display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;
 }
-.ohm-cards-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
-.ohm-cards-count { color: var(--text-secondary); font-size: 14px; }
+.ohm-cards-title { font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.ohm-cards-count { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
 
 .ohm-cards-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .ohm-cards-grid { grid-template-columns: 1fr; gap: 14px; }
 }
 
 .ohm-card {
     background-color: var(--surface-color); border: 1px solid var(--border-color);
-    border-radius: var(--border-radius); overflow: hidden; display: flex; flex-direction: column;
+    border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
     transition: var(--transition); height: 100%;
 }
-.ohm-card:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
 
-.ohm-card-img { width: 100%; height: 160px; object-fit: cover; background-color: #222; border-bottom: 1px solid var(--border-color); }
+.ohm-card-img { width: 100%; height: 160px; object-fit: cover; background-color: #161616; border-bottom: 1px solid var(--border-color); }
 
-.ohm-card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+.ohm-card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
 
-.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px; }
+.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
 
-.ohm-card-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; color: var(--text-primary); }
+.ohm-card-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
 
-.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;}
+.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
 .ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
 
 .ohm-card-desc {
-    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 16px; margin-bottom: 20px;
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 16px;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
 }
 
 .ohm-ticket-btn {
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
     background-color: var(--text-primary); color: #000; padding: 10px 16px;
-    border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;
+    border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 600;
     transition: var(--transition); border: 1px solid transparent; width: 100%;
 }
 .ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
 
 /* Filters & Search */
-.ohm-cards-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
-.ohm-filter-btns { display: flex; gap: 8px; background: #222; padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
+.ohm-cards-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
+.ohm-filter-btns {
+    display: flex; gap: 4px; background: var(--surface-color); padding: 4px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border-color);
+}
 .ohm-filter-btn {
-    background: transparent; border: none; color: var(--text-secondary); padding: 6px 16px; border-radius: 6px;
+    background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px; border-radius: 6px;
     font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); font-family: var(--font-family);
 }
 .ohm-filter-btn.active { background: var(--text-primary); color: #000; }
 .ohm-filter-btn:hover:not(.active) { color: var(--text-primary); }
-.ohm-search-container { flex-grow: 1; position: relative; min-width: 200px; }
+.ohm-search-container { flex-grow: 1; position: relative; min-width: 180px; }
 .ohm-search-input {
-    width: 100%; background: #222; border: 1px solid var(--border-color); color: var(--text-primary);
-    padding: 8px 12px 8px 36px; border-radius: 8px; font-size: 14px; outline: none; transition: var(--transition); font-family: var(--font-family); box-sizing: border-box;
+    width: 100%; background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary);
+    padding: 9px 12px 9px 36px; border-radius: var(--radius-sm); font-size: 14px; outline: none;
+    transition: var(--transition); font-family: var(--font-family); box-sizing: border-box;
 }
-.ohm-search-input:focus { border-color: rgba(255,255,255,0.5); }
+.ohm-search-input::placeholder { color: #444; }
+.ohm-search-input:focus { border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(255,255,255,0.03); }
 .ohm-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: var(--text-secondary); pointer-events: none;}
 
+@media (max-width: 600px) {
+    .ohm-cards-filters { gap: 8px; }
+    .ohm-search-container { min-width: 100%; }
+}
+
 /* Loader */
-.ohm-state-msg { padding: 40px 20px; text-align: center; color: var(--text-secondary); background-color: var(--surface-color); border-radius: var(--border-radius); border: 1px dashed var(--border-color); grid-column: 1 / -1; }
-.ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; }
+.ohm-state-msg {
+    padding: 40px 20px; text-align: center; color: var(--text-secondary);
+    background-color: var(--surface-color); border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-color); grid-column: 1 / -1;
+}
+.ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; }
 @keyframes ohm-spin { to { transform: rotate(360deg); } }
 </style>
 
