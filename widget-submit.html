@@ -210,8 +210,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Image URL (Optional)</label>
-                    <input type="url" id="image_url" placeholder="https://...">
+                    <label>Upload Photo/Flyer (Required)</label>
+                    <input type="file" id="image_upload" accept="image/*" required>
                 </div>
             </div>
 
@@ -271,10 +271,32 @@
             msg.className = '';
 
             try {
+                const fileInput = document.getElementById('image_upload');
+                const file = fileInput.files[0];
+                let image_url = null;
+
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                    const filePath = `flyers/${fileName}`;
+
+                    const { error: uploadError } = await _supabase.storage
+                        .from('event-images')
+                        .upload(filePath, file);
+
+                    if (uploadError) throw new Error('Upload error: ' + uploadError.message);
+
+                    const { data: { publicUrl } } = _supabase.storage
+                        .from('event-images')
+                        .getPublicUrl(filePath);
+                        
+                    image_url = publicUrl;
+                }
+
                 const eventData = {
                     title: document.getElementById('title').value,
                     tag: document.getElementById('tag').value,
-                    image_url: document.getElementById('image_url').value || null,
+                    image_url: image_url,
                     start_time: new Date(document.getElementById('start_time').value).toISOString(),
                     end_time: document.getElementById('end_time').value ? new Date(document.getElementById('end_time').value).toISOString() : null,
                     location_name: document.getElementById('location_name').value,
