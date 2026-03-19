@@ -173,6 +173,34 @@ const template = `<!DOCTYPE html>
             max-height: 350px;
             overflow-y: auto;
         }
+
+        details {
+            margin-top: 16px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        summary {
+            background-color: #111;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        summary:hover { background-color: #1a1a1a; color: #fff; }
+        summary::-webkit-details-marker { display: none; }
+        summary::before {
+            content: '→';
+            display: inline-block;
+            margin-right: 10px;
+            transition: transform 0.2s;
+        }
+        details[open] summary::before {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body>
@@ -181,7 +209,7 @@ const template = `<!DOCTYPE html>
     
     <header class="library-header">
         <h1 class="library-title">Widget Library</h1>
-        <p class="library-subtitle">Independent, responsive embed snippets designed to plug straight into Webflow. Each widget connects to Supabase and manages its own state.</p>
+        <p class="library-subtitle">Modern, lightweight event widgets for Webflow. Use the <b>Async</b> method for a cleaner site and better performance.</p>
     </header>
 
     <!-- CALENDAR WIDGET -->
@@ -197,14 +225,29 @@ const template = `<!DOCTYPE html>
 
         <div class="code-container">
             <div class="code-block-header">
-                <span class="code-title">calendar-embed.html</span>
-                <button class="copy-btn" onclick="copyCode(this, 'calendar-code')">
+                <span class="code-title">Embed Code (Async)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'calendar-async-code')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     <span>Copy Snippet</span>
                 </button>
             </div>
-            <pre class="code-snippet" id="calendar-code">${escapeHtml(calendarHtml)}</pre>
+            <pre class="code-snippet" id="calendar-async-code">&lt;div data-ohm-widget="calendar"&gt;&lt;/div&gt;
+&lt;script src="https://ohm518dotcom-ops.github.io/Event-Widgets/loader.js" async&gt;&lt;/script&gt;</pre>
         </div>
+
+        <details>
+            <summary>Advanced: View Full Source (Legacy)</summary>
+            <div class="code-container" style="border:none;">
+                <div class="code-block-header" style="background-color: #000; border-radius:0; border-left:none; border-right:none;">
+                    <span class="code-title">Full Widget HTML/CSS/JS</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'calendar-code')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy Full Code</span>
+                    </button>
+                </div>
+                <pre class="code-snippet" id="calendar-code" style="border:none; border-radius:0;">${escapeHtml(calendarHtml)}</pre>
+            </div>
+        </details>
     </section>
 
     <!-- MAP WIDGET -->
@@ -222,14 +265,29 @@ const template = `<!DOCTYPE html>
 
         <div class="code-container">
             <div class="code-block-header">
-                <span class="code-title">map-embed.html</span>
-                <button class="copy-btn" onclick="copyCode(this, 'map-code')">
+                <span class="code-title">Embed Code (Async)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'map-async-code')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     <span>Copy Snippet</span>
                 </button>
             </div>
-            <pre class="code-snippet" id="map-code">${escapeHtml(mapHtml)}</pre>
+            <pre class="code-snippet" id="map-async-code">&lt;div data-ohm-widget="map"&gt;&lt;/div&gt;
+&lt;script src="https://ohm518dotcom-ops.github.io/Event-Widgets/loader.js" async&gt;&lt;/script&gt;</pre>
         </div>
+
+        <details>
+            <summary>Advanced: View Full Source (Legacy)</summary>
+            <div class="code-container" style="border:none;">
+                <div class="code-block-header" style="background-color: #000; border-radius:0; border-left:none; border-right:none;">
+                    <span class="code-title">Full Widget HTML/CSS/JS</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'map-code')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy Full Code</span>
+                    </button>
+                </div>
+                <pre class="code-snippet" id="map-code" style="border:none; border-radius:0;">${escapeHtml(mapHtml)}</pre>
+            </div>
+        </details>
     </section>
 
     <!-- EVENT CARDS WIDGET -->
@@ -245,14 +303,29 @@ const template = `<!DOCTYPE html>
 
         <div class="code-container">
             <div class="code-block-header">
-                <span class="code-title">cards-embed.html</span>
-                <button class="copy-btn" onclick="copyCode(this, 'cards-code')">
+                <span class="code-title">Embed Code (Async)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'cards-async-code')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     <span>Copy Snippet</span>
                 </button>
             </div>
-            <pre class="code-snippet" id="cards-code">${escapeHtml(cardsHtml)}</pre>
+            <pre class="code-snippet" id="cards-async-code">&lt;div data-ohm-widget="cards"&gt;&lt;/div&gt;
+&lt;script src="https://ohm518dotcom-ops.github.io/Event-Widgets/loader.js" async&gt;&lt;/script&gt;</pre>
         </div>
+
+        <details>
+            <summary>Advanced: View Full Source (Legacy)</summary>
+            <div class="code-container" style="border:none;">
+                <div class="code-block-header" style="background-color: #000; border-radius:0; border-left:none; border-right:none;">
+                    <span class="code-title">Full Widget HTML/CSS/JS</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'cards-code')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy Full Code</span>
+                    </button>
+                </div>
+                <pre class="code-snippet" id="cards-code" style="border:none; border-radius:0;">${escapeHtml(cardsHtml)}</pre>
+            </div>
+        </details>
     </section>
 </div>
 

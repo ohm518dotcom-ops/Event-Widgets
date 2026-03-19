@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHM Widget Loader Test</title>
+    <style>
+        body { background-color: #060606; color: white; font-family: sans-serif; padding: 40px; }
+        .test-container { max-width: 1000px; margin: 0 auto; }
+        .widget-box { margin-bottom: 60px; border: 1px solid #222; padding: 20px; border-radius: 12px; }
+        h2 { margin-bottom: 24px; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Async Loader Test Page</h1>
+        <p>This page tests the new one-line embed method.</p>
+        <hr style="border: 0; border-top: 1px solid #222; margin: 40px 0;">
+
+        <div class="widget-box">
+            <h2>Hybrid Widget (Async)</h2>
+            <div data-ohm-widget="hybrid"></div>
+        </div>
+
+        <div class="widget-box">
+            <h2>Cards Widget (Async)</h2>
+            <div data-ohm-widget="cards"></div>
+        </div>
+
+    </div>
+
+    <!-- The Loader - One line to rule them all -->
+    <script src="loader.js" async></script>
+</body>
+</html>
