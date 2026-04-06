@@ -222,6 +222,10 @@
         <form id="submit-form">
             <div class="form-grid">
                 <div class="form-group full-width">
+                    <label for="email">Submitter Email</label>
+                    <input type="email" id="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group full-width">
                     <label for="title">Event Title</label>
                     <input type="text" id="title" required placeholder="e.g. Techno Night Volume 1">
                 </div>
@@ -373,6 +377,7 @@
                 const endTime = document.getElementById('end_time_select').value;
 
                 const eventData = {
+                    email: document.getElementById('email').value,
                     title: document.getElementById('title').value,
                     tag: document.getElementById('tag').value,
                     image_url: image_url,
