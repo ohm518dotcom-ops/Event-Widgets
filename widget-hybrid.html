@@ -32,21 +32,39 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 
 .ohm-hybrid-layout * { box-sizing: border-box; margin: 0; padding: 0; }
 
-@media (min-width: 900px) {
-    .ohm-calendar-widget {
-        width: 340px;
-        align-self: flex-start;
-    }
-}
-
-/* Calendar Styles */
+/* Calendar Modal Styles */
 .ohm-calendar-widget {
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: 22px;
-    display: flex;
+    display: none;
     flex-direction: column;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: 340px;
+    max-width: 90vw;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+}
+.ohm-calendar-widget.open {
+    display: flex;
+}
+.ohm-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+.ohm-modal-backdrop.open {
+    display: block;
 }
 .ohm-calendar-header {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
@@ -160,7 +178,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 </style>
 
 <div class="ohm-hybrid-layout" id="ohm-hybrid-layout">
-    <!-- Calendar Component -->
+    <!-- Calendar Component Modal -->
+    <div class="ohm-modal-backdrop" id="ohm-calendar-backdrop"></div>
     <div class="ohm-calendar-widget" id="ohm-calendar">
         <div class="ohm-calendar-header">
             <div class="ohm-calendar-title" id="ohm-month-year">Month Year</div>
@@ -193,6 +212,9 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
                 <button class="ohm-filter-btn" data-filter="today">Today</button>
                 <button class="ohm-filter-btn" data-filter="all">All</button>
+                <button class="ohm-filter-btn" id="ohm-calendar-toggle" title="Pick a Date...">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                </button>
             </div>
             <div class="ohm-search-container">
                 <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -216,6 +238,9 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     // Calendar Elements
     const calGrid = document.getElementById('ohm-calendar-grid');
     const monthYear = document.getElementById('ohm-month-year');
+    const calendarWidget = document.getElementById('ohm-calendar');
+    const calendarBackdrop = document.getElementById('ohm-calendar-backdrop');
+    const calendarToggleBtn = document.getElementById('ohm-calendar-toggle');
     let displayMonthDate = new Date();
     
     // Cards Elements
@@ -351,6 +376,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                         titleEl.textContent = formatter.format(new Date(year, month, dayNum));
                     }
                     applyFilters();
+                    calendarWidget.classList.remove('open');
+                    calendarBackdrop.classList.remove('open');
                 });
 
             } else {
@@ -369,6 +396,16 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     document.getElementById('ohm-next').addEventListener('click', () => {
         displayMonthDate.setMonth(displayMonthDate.getMonth() + 1);
         fetchEvents();
+    });
+
+    // Calendar Modal Toggling
+    calendarToggleBtn.addEventListener('click', () => {
+        calendarWidget.classList.toggle('open');
+        calendarBackdrop.classList.toggle('open');
+    });
+    calendarBackdrop.addEventListener('click', () => {
+        calendarWidget.classList.remove('open');
+        calendarBackdrop.classList.remove('open');
     });
 
     // ========== CARDS LOGIC ==========
