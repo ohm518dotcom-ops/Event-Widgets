@@ -1,5 +1,6 @@
 <!-- WEBFLOW EMBED: Hybrid Widget Starts -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 body { background-color: #060606; margin: 0; padding: 24px; }
 /* Vibe & Variables */
@@ -99,7 +100,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-day.selected {
     background-color: var(--text-primary); color: #000; font-weight: 700; border: none !important;
 }
-.ohm-day.has-events { border: 1px solid rgba(255,255,255,0.3); }
+.ohm-day.has-events::after {
+    content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; background-color: var(--text-primary); border-radius: 50%;
+}
 
 /* Cards Styles */
 .ohm-cards-widget { width: 100%; display: flex; flex-direction: column; background-color: transparent;}
@@ -175,11 +179,117 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; display: none;}
 .ohm-hybrid-layout.loading .ohm-loader { display: block; }
 @keyframes ohm-spin { to { transform: rotate(360deg); } }
+
+/* submit toggle button */
+.ohm-submit-toggle-btn {
+    background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);
+    padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: var(--transition); font-family: var(--font-family);
+}
+.ohm-submit-toggle-btn:hover { background: var(--glass-hover); }
+
+.ohm-submit-modal {
+    background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+    padding: 32px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1000; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.8);
+}
+.ohm-submit-modal.open { display: flex; }
+.ohm-submit-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.ohm-submit-header p { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; }
+.ohm-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .ohm-form-grid { grid-template-columns: 1fr; gap: 12px; } }
+.ohm-form-group.full-width { grid-column: 1 / -1; }
+.ohm-form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.ohm-form-input, .ohm-form-select, .ohm-form-textarea {
+    width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); padding: 10px 12px;
+    border-radius: var(--radius-sm); color: #fff; font-family: inherit; font-size: 14px; outline: none; transition: var(--transition); min-height: 40px; box-sizing: border-box;
+}
+.ohm-form-input:focus, .ohm-form-select:focus, .ohm-form-textarea:focus { border-color: var(--border-hover); background: rgba(255,255,255,0.06); box-shadow: 0 0 0 3px rgba(255,255,255,0.02); }
+.ohm-form-textarea { resize: vertical; min-height: 80px; }
+.ohm-form-select {
+    appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer;
+}
+.ohm-form-input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+.ohm-btn-submit { width: 100%; background: var(--text-primary); color: #000; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); margin-top: 16px; }
+.ohm-btn-submit:hover { opacity: 0.9; }
+.ohm-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+#ohm-status-msg { margin-top: 16px; font-size: 13px; text-align: center; display: none; padding: 10px; border-radius: var(--radius-sm); }
+#ohm-status-msg.success { display: block; background: rgba(0, 255, 136, 0.05); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.1); }
+#ohm-status-msg.error { display: block; background: rgba(255, 71, 87, 0.05); color: #ff4757; border: 1px solid rgba(255, 71, 87, 0.1); }
 </style>
 
 <div class="ohm-hybrid-layout" id="ohm-hybrid-layout">
     <!-- Calendar Component Modal -->
     <div class="ohm-modal-backdrop" id="ohm-calendar-backdrop"></div>
+    
+    <div class="ohm-submit-modal" id="ohm-submit-modal">
+        <div class="ohm-submit-header">
+            <h2 style="margin: 0 0 8px 0; font-size: 22px;">Submit an Event</h2>
+            <p>Fill out the details below. Our team will review and publish it shortly.</p>
+        </div>
+        <form id="ohm-submit-form">
+            <div class="ohm-form-grid">
+                <div class="ohm-form-group full-width">
+                    <label for="ohm_email">Submitter Email</label>
+                    <input type="email" id="ohm_email" class="ohm-form-input" required placeholder="your@email.com">
+                </div>
+                <div class="ohm-form-group full-width">
+                    <label for="ohm_title">Event Title</label>
+                    <input type="text" id="ohm_title" class="ohm-form-input" required placeholder="e.g. Techno Night Volume 1">
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_tag">Tag</label>
+                    <select id="ohm_tag" class="ohm-form-select">
+                        <option value="Music">Music</option>
+                        <option value="Art">Art</option>
+                        <option value="Workshop">Workshop</option>
+                        <option value="Community">Community</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_image_upload">Flyer / Image (Required)</label>
+                    <input type="file" id="ohm_image_upload" class="ohm-form-input" accept="image/*" required>
+                </div>
+                <div class="ohm-form-group">
+                    <label>Start Date & Time</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="ohm_start_date" class="ohm-form-input" required style="flex: 1.5;">
+                        <select id="ohm_start_time_select" class="ohm-form-select" required style="flex: 1;"></select>
+                    </div>
+                </div>
+                <div class="ohm-form-group">
+                    <label>End Date & Time</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="ohm_end_date" class="ohm-form-input" style="flex: 1.5;">
+                        <select id="ohm_end_time_select" class="ohm-form-select" style="flex: 1;">
+                            <option value="">No end</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_location_name">Venue Name</label>
+                    <input type="text" id="ohm_location_name" class="ohm-form-input" placeholder="e.g. Empire Underground" required>
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_address">Full Address</label>
+                    <input type="text" id="ohm_address" class="ohm-form-input" placeholder="93 N Pearl St, Albany, NY">
+                </div>
+                <div class="ohm-form-group full-width">
+                    <label for="ohm_description">Description</label>
+                    <textarea id="ohm_description" class="ohm-form-textarea" rows="4" placeholder="Deep dark techno event..."></textarea>
+                </div>
+                <div class="ohm-form-group full-width">
+                    <label for="ohm_ticket_url">Ticket URL (Optional)</label>
+                    <input type="url" id="ohm_ticket_url" class="ohm-form-input" placeholder="https://eventbrite.com/...">
+                </div>
+            </div>
+            <button type="submit" class="ohm-btn-submit" id="ohm-submit-btn">Submit for Review</button>
+            <div id="ohm-status-msg"></div>
+        </form>
+    </div>
+
     <div class="ohm-calendar-widget" id="ohm-calendar">
         <div class="ohm-calendar-header">
             <div class="ohm-calendar-title" id="ohm-month-year">Month Year</div>
@@ -201,18 +311,18 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     <!-- Cards Component -->
     <div class="ohm-cards-widget" id="ohm-cards-container">
         <div class="ohm-cards-header">
-             <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
                  <div class="ohm-cards-title" id="ohm-view-title">Upcoming Events</div>
                  <div class="ohm-loader" style="width: 20px; height: 20px; border-width: 2px; margin: 0; display: none;" id="ohm-cards-loader"></div>
              </div>
-            <div class="ohm-cards-count" id="ohm-event-count">...</div>
+            <button class="ohm-submit-toggle-btn" id="ohm-submit-toggle">Submit an Event</button>
         </div>
         <div class="ohm-cards-filters">
             <div class="ohm-filter-btns">
                 <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
                 <button class="ohm-filter-btn" data-filter="today">Today</button>
                 <button class="ohm-filter-btn" data-filter="all">All</button>
-                <button class="ohm-filter-btn" id="ohm-calendar-toggle" title="Pick a Date...">
+                <button class="ohm-filter-btn" id="ohm-calendar-toggle" data-filter="calendar_date" title="Pick a Date...">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
                 </button>
             </div>
@@ -245,7 +355,6 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     
     // Cards Elements
     const cardsGrid = document.getElementById('ohm-cards-grid');
-    const countEl = document.getElementById('ohm-event-count');
     const titleEl = document.getElementById('ohm-view-title');
     const searchInput = document.getElementById('ohm-search');
     const filterBtns = document.querySelectorAll('.ohm-filter-btn');
@@ -310,7 +419,6 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         } catch(e) { 
             console.error("Hybrid Widget err:", e);
             cardsGrid.innerHTML = `<div class="ohm-state-msg"><p>Failed to load events.</p></div>`;
-            countEl.textContent = "0 events";
         } finally {
             loader.style.display = 'none';
         }
@@ -416,7 +524,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 
     function updateFilterButtonsUI() {
         filterBtns.forEach(btn => {
-            if (btn.getAttribute('data-filter') === currentFilter) {
+            if (btn.id === 'ohm-calendar-toggle') {
+                if (currentFilter === 'calendar_date') btn.classList.add('active');
+                else btn.classList.remove('active');
+            } else if (btn.getAttribute('data-filter') === currentFilter) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
@@ -429,8 +540,9 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     }
 
     filterBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            currentFilter = e.target.getAttribute('data-filter');
+        if (btn.id === 'ohm-calendar-toggle') return;
+        btn.addEventListener('click', () => {
+            currentFilter = btn.getAttribute('data-filter');
             selectedDateFilter = null; // Clear calendar selection
             
             document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
@@ -481,7 +593,6 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 
     function renderCards(events) {
         cardsGrid.innerHTML = '';
-        countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
 
         if (events.length === 0) {
             cardsGrid.innerHTML = `<div class="ohm-state-msg"><p>No events found for this selection.</p></div>`;
@@ -533,6 +644,137 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 </div>
             `;
             cardsGrid.appendChild(card);
+        });
+    }
+
+    // ========== SUBMIT MODAL LOGIC ==========
+    const submitToggleBtn = document.getElementById('ohm-submit-toggle');
+    const submitModal = document.getElementById('ohm-submit-modal');
+    
+    if (submitToggleBtn) {
+        submitToggleBtn.addEventListener('click', () => {
+            submitModal.classList.add('open');
+            calendarBackdrop.classList.add('open');
+            calendarWidget.classList.remove('open'); // close calendar if open
+        });
+    }
+    
+    // update backdrop click to cover submit modal too
+    calendarBackdrop.addEventListener('click', () => {
+        submitModal.classList.remove('open');
+    });
+
+    const _supabase = typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    function initSubDefaults() {
+        const now = new Date();
+        const defaultStart = new Date(now);
+        defaultStart.setHours(19, 0, 0, 0);
+        if (now > defaultStart) defaultStart.setDate(defaultStart.getDate() + 1);
+        
+        const defaultEnd = new Date(defaultStart);
+        defaultEnd.setHours(21, 0, 0, 0);
+        
+        const startInput = document.getElementById('ohm_start_date');
+        if (startInput) {
+            startInput.value = defaultStart.toISOString().split('T')[0];
+            document.getElementById('ohm_start_time_select').value = "19:00";
+            document.getElementById('ohm_end_date').value = defaultEnd.toISOString().split('T')[0];
+            document.getElementById('ohm_end_time_select').value = "21:00";
+        }
+    }
+
+    function populateSubTimeSelects() {
+        const selects = [document.getElementById('ohm_start_time_select'), document.getElementById('ohm_end_time_select')];
+        if (!selects[0]) return;
+        selects.forEach((select, idx) => {
+            const currentVal = select.value;
+            select.innerHTML = idx === 1 ? '<option value="">No end time</option>' : '';
+            for (let h = 0; h < 24; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    const HH = h.toString().padStart(2, '0');
+                    const mm = m.toString().padStart(2, '0');
+                    const label = new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    const option = document.createElement('option');
+                    option.value = `${HH}:${mm}`;
+                    option.textContent = label;
+                    select.appendChild(option);
+                }
+            }
+            if (currentVal) select.value = currentVal;
+        });
+    }
+
+    populateSubTimeSelects();
+    initSubDefaults();
+
+    const startDateInput = document.getElementById('ohm_start_date');
+    if (startDateInput) {
+        startDateInput.addEventListener('change', (e) => {
+            const endDateInput = document.getElementById('ohm_end_date');
+            if (e.target.value && (!endDateInput.value || endDateInput.value < e.target.value)) {
+                endDateInput.value = e.target.value;
+            }
+        });
+    }
+
+    const submitForm = document.getElementById('ohm-submit-form');
+    if (submitForm) {
+        submitForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!_supabase) { alert('Supabase client not loaded!'); return; }
+            
+            const btn = document.getElementById('ohm-submit-btn');
+            const msg = document.getElementById('ohm-status-msg');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            msg.style.display = 'none';
+            msg.className = '';
+
+            try {
+                const fileInput = document.getElementById('ohm_image_upload');
+                const file = fileInput.files[0];
+                let image_url = null;
+
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                    const filePath = `flyers/${fileName}`;
+                    const { error: uploadError } = await _supabase.storage.from('event-images').upload(filePath, file);
+                    if (uploadError) throw new Error('Upload error: ' + uploadError.message);
+                    const { data: { publicUrl } } = _supabase.storage.from('event-images').getPublicUrl(filePath);
+                    image_url = publicUrl;
+                }
+
+                const eventData = {
+                    email: document.getElementById('ohm_email').value,
+                    title: document.getElementById('ohm_title').value,
+                    tag: document.getElementById('ohm_tag').value,
+                    image_url: image_url,
+                    start_time: `${document.getElementById('ohm_start_date').value}T${document.getElementById('ohm_start_time_select').value}:00`,
+                    end_time: (document.getElementById('ohm_end_date').value && document.getElementById('ohm_end_time_select').value) ? `${document.getElementById('ohm_end_date').value}T${document.getElementById('ohm_end_time_select').value}:00` : null,
+                    location_name: document.getElementById('ohm_location_name').value,
+                    address: document.getElementById('ohm_address').value || null,
+                    description: document.getElementById('ohm_description').value || null,
+                    ticket_url: document.getElementById('ohm_ticket_url').value || null,
+                    status: 'pending'
+                };
+
+                const { error } = await _supabase.from('events').insert([eventData]);
+                if (error) throw error;
+
+                msg.textContent = 'Success! Your event has been submitted for review.';
+                msg.className = 'success';
+                submitForm.reset();
+                initSubDefaults();
+            } catch (err) {
+                console.error(err);
+                msg.textContent = 'Error: ' + err.message;
+                msg.className = 'error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit for Review';
+            }
         });
     }
 
