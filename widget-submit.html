@@ -45,16 +45,17 @@
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
             width: 100%;
-            max-width: 600px;
+            max-width: 1000px;
             padding: 32px;
             box-shadow: 0 32px 64px rgba(0,0,0,0.5);
             max-height: 85vh;
             overflow-y: auto;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
             .submit-card {
                 padding: 24px 20px;
+                max-width: 600px;
             }
         }
 
@@ -77,8 +78,15 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -89,11 +97,21 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .form-group.full-width {
             grid-column: 1 / -1;
+        }
+        
+        .form-group.span-2 {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 900px) {
+            .form-group.span-2 {
+                grid-column: 1 / -1;
+            }
         }
 
         label {
@@ -224,13 +242,9 @@
 
         <form id="submit-form">
             <div class="form-grid">
-                <div class="form-group full-width">
+                <div class="form-group span-2">
                     <label for="email">Submitter Email</label>
                     <input type="email" id="email" required placeholder="your@email.com">
-                </div>
-                <div class="form-group full-width">
-                    <label for="title">Event Title</label>
-                    <input type="text" id="title" required placeholder="e.g. Techno Night Volume 1">
                 </div>
                 <div class="form-group">
                     <label for="tag">Tag</label>
@@ -241,6 +255,10 @@
                         <option value="Community">Community</option>
                         <option value="Other">Other</option>
                     </select>
+                </div>
+                <div class="form-group span-2">
+                    <label for="title">Event Title</label>
+                    <input type="text" id="title" required placeholder="e.g. Techno Night Volume 1">
                 </div>
                 <div class="form-group">
                     <label for="image_upload">Flyer / Image (Required)</label>
@@ -266,17 +284,17 @@
                     <label for="location_name">Venue Name</label>
                     <input type="text" id="location_name" placeholder="e.g. Empire Underground" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group span-2">
                     <label for="address">Full Address</label>
                     <input type="text" id="address" placeholder="93 N Pearl St, Albany, NY">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_url">Ticket URL (Optional)</label>
+                    <input type="url" id="ticket_url" placeholder="https://eventbrite.com/...">
                 </div>
                 <div class="form-group full-width">
                     <label for="description">Description</label>
                     <textarea id="description" rows="4" placeholder="Deep dark techno event..."></textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label for="ticket_url">Ticket URL (Optional)</label>
-                    <input type="url" id="ticket_url" placeholder="https://eventbrite.com/...">
                 </div>
             </div>
             
