@@ -23,6 +23,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     display: flex;
     flex-direction: column;
     width: 100%;
+    overflow-x: hidden;
     gap: 24px;
     font-family: var(--font-family);
     color: var(--text-primary);
@@ -190,8 +191,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 
 .ohm-submit-modal {
     background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
-    padding: 32px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 1000; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.8);
+    padding: 24px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1000; width: 100%; max-width: 600px; max-height: 82vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.8);
 }
 .ohm-submit-modal.open { display: flex; }
 .ohm-submit-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
@@ -207,9 +208,15 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-form-input:focus, .ohm-form-select:focus, .ohm-form-textarea:focus { border-color: var(--border-hover); background: rgba(255,255,255,0.06); box-shadow: 0 0 0 3px rgba(255,255,255,0.02); }
 .ohm-form-textarea { resize: vertical; min-height: 80px; }
 .ohm-form-select {
-    appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
 }
+.ohm-form-select option { background-color: var(--surface-color); color: #fff; }
 .ohm-form-input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 .ohm-btn-submit { width: 100%; background: var(--text-primary); color: #000; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); margin-top: 16px; }
 .ohm-btn-submit:hover { opacity: 0.9; }
@@ -664,7 +671,13 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         submitModal.classList.remove('open');
     });
 
-    const _supabase = typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    let _supabaseClient = null;
+    function getSupabase() {
+        if (!_supabaseClient && typeof supabase !== 'undefined') {
+            _supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        return _supabaseClient;
+    }
 
     function initSubDefaults() {
         const now = new Date();
@@ -722,7 +735,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     if (submitForm) {
         submitForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!_supabase) { alert('Supabase client not loaded!'); return; }
+            const client = getSupabase();
+            if (!client) { alert('Supabase client not loaded! Please check your connection or script tags.'); return; }
             
             const btn = document.getElementById('ohm-submit-btn');
             const msg = document.getElementById('ohm-status-msg');
@@ -740,9 +754,9 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
                     const filePath = `flyers/${fileName}`;
-                    const { error: uploadError } = await _supabase.storage.from('event-images').upload(filePath, file);
+                    const { error: uploadError } = await client.storage.from('event-images').upload(filePath, file);
                     if (uploadError) throw new Error('Upload error: ' + uploadError.message);
-                    const { data: { publicUrl } } = _supabase.storage.from('event-images').getPublicUrl(filePath);
+                    const { data: { publicUrl } } = client.storage.from('event-images').getPublicUrl(filePath);
                     image_url = publicUrl;
                 }
 
@@ -760,7 +774,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     status: 'pending'
                 };
 
-                const { error } = await _supabase.from('events').insert([eventData]);
+                const { error } = await client.from('events').insert([eventData]);
                 if (error) throw error;
 
                 msg.textContent = 'Success! Your event has been submitted for review.';
