@@ -105,6 +105,11 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
     width: 4px; height: 4px; background-color: var(--text-primary); border-radius: 50%;
 }
+.ohm-day.disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
 /* Cards Styles */
 .ohm-cards-widget { width: 100%; display: flex; flex-direction: column; background-color: transparent;}
@@ -470,30 +475,35 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     return e._dateObj.getFullYear() === year && e._dateObj.getMonth() === month && e._dateObj.getDate() === dayNum;
                 });
                 
-                if (hasEvent) dayEl.classList.add('has-events');
-                if (selectedDateFilter === cellDateStr) dayEl.classList.add('selected');
+                if (hasEvent) {
+                    dayEl.classList.add('has-events');
+                    
+                    if (selectedDateFilter === cellDateStr) dayEl.classList.add('selected');
 
-                dayEl.addEventListener('click', () => {
-                    if (selectedDateFilter === cellDateStr) {
-                        selectedDateFilter = null;
-                        dayEl.classList.remove('selected');
-                        currentFilter = 'upcoming'; 
-                        updateFilterButtonsUI();
-                    } else {
-                        filterBtns.forEach(b => b.classList.remove('active'));
-                        currentFilter = 'calendar_date';
-                        selectedDateFilter = cellDateStr;
-                        
-                        document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
-                        dayEl.classList.add('selected');
-                        
-                        const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
-                        titleEl.textContent = formatter.format(new Date(year, month, dayNum));
-                    }
-                    applyFilters();
-                    calendarWidget.classList.remove('open');
-                    calendarBackdrop.classList.remove('open');
-                });
+                    dayEl.addEventListener('click', () => {
+                        if (selectedDateFilter === cellDateStr) {
+                            selectedDateFilter = null;
+                            dayEl.classList.remove('selected');
+                            currentFilter = 'upcoming'; 
+                            updateFilterButtonsUI();
+                        } else {
+                            filterBtns.forEach(b => b.classList.remove('active'));
+                            currentFilter = 'calendar_date';
+                            selectedDateFilter = cellDateStr;
+                            
+                            document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+                            dayEl.classList.add('selected');
+                            
+                            const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+                            titleEl.textContent = formatter.format(new Date(year, month, dayNum));
+                        }
+                        applyFilters();
+                        calendarWidget.classList.remove('open');
+                        calendarBackdrop.classList.remove('open');
+                    });
+                } else {
+                    dayEl.classList.add('disabled');
+                }
 
             } else {
                 dayEl.textContent = i - firstDay - daysInMonth + 1;
@@ -796,3 +806,4 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     fetchEvents();
 })();
 </script>
+<!-- WEBFLOW EMBED: Hybrid Widget Ends -->
