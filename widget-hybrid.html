@@ -196,15 +196,21 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 
 .ohm-submit-modal {
     background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
-    padding: 24px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 1000; width: 100%; max-width: 600px; max-height: 82vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.8);
+    padding: 28px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1000; width: 100%; max-width: 1000px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.8);
+}
+@media (max-width: 1000px) {
+    .ohm-submit-modal { max-width: 90vw; padding: 20px; }
 }
 .ohm-submit-modal.open { display: flex; }
 .ohm-submit-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
 .ohm-submit-header p { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; }
-.ohm-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 600px) { .ohm-form-grid { grid-template-columns: 1fr; gap: 12px; } }
+.ohm-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .ohm-form-grid { grid-template-columns: 1fr 1fr; gap: 12px; } }
+@media (max-width: 600px) { .ohm-form-grid { grid-template-columns: 1fr; gap: 10px; } }
 .ohm-form-group.full-width { grid-column: 1 / -1; }
+.ohm-form-group.span-2 { grid-column: span 2; }
+@media (max-width: 900px) { .ohm-form-group.span-2 { grid-column: 1 / -1; } }
 .ohm-form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
 .ohm-form-input, .ohm-form-select, .ohm-form-textarea {
     width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); padding: 10px 12px;
@@ -242,13 +248,9 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         </div>
         <form id="ohm-submit-form">
             <div class="ohm-form-grid">
-                <div class="ohm-form-group full-width">
+                <div class="ohm-form-group span-2">
                     <label for="ohm_email">Submitter Email</label>
                     <input type="email" id="ohm_email" class="ohm-form-input" required placeholder="your@email.com">
-                </div>
-                <div class="ohm-form-group full-width">
-                    <label for="ohm_title">Event Title</label>
-                    <input type="text" id="ohm_title" class="ohm-form-input" required placeholder="e.g. Techno Night Volume 1">
                 </div>
                 <div class="ohm-form-group">
                     <label for="ohm_tag">Tag</label>
@@ -259,6 +261,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                         <option value="Community">Community</option>
                         <option value="Other">Other</option>
                     </select>
+                </div>
+                <div class="ohm-form-group span-2">
+                    <label for="ohm_title">Event Title</label>
+                    <input type="text" id="ohm_title" class="ohm-form-input" required placeholder="e.g. Techno Night Volume 1">
                 </div>
                 <div class="ohm-form-group">
                     <label for="ohm_image_upload">Flyer / Image (Required)</label>
@@ -284,17 +290,17 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     <label for="ohm_location_name">Venue Name</label>
                     <input type="text" id="ohm_location_name" class="ohm-form-input" placeholder="e.g. Empire Underground" required>
                 </div>
-                <div class="ohm-form-group">
+                <div class="ohm-form-group span-2">
                     <label for="ohm_address">Full Address</label>
                     <input type="text" id="ohm_address" class="ohm-form-input" placeholder="93 N Pearl St, Albany, NY">
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_ticket_url">Ticket URL (Optional)</label>
+                    <input type="url" id="ohm_ticket_url" class="ohm-form-input" placeholder="https://eventbrite.com/...">
                 </div>
                 <div class="ohm-form-group full-width">
                     <label for="ohm_description">Description</label>
                     <textarea id="ohm_description" class="ohm-form-textarea" rows="4" placeholder="Deep dark techno event..."></textarea>
-                </div>
-                <div class="ohm-form-group full-width">
-                    <label for="ohm_ticket_url">Ticket URL (Optional)</label>
-                    <input type="url" id="ohm_ticket_url" class="ohm-form-input" placeholder="https://eventbrite.com/...">
                 </div>
             </div>
             <button type="submit" class="ohm-btn-submit" id="ohm-submit-btn">Submit for Review</button>
