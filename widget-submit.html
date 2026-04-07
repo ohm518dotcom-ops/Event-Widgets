@@ -46,8 +46,10 @@
             border-radius: var(--radius-xl);
             width: 100%;
             max-width: 600px;
-            padding: 40px;
+            padding: 32px;
             box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         @media (max-width: 640px) {
@@ -138,6 +140,7 @@
             padding-right: 36px;
             cursor: pointer;
         }
+        select option { background-color: var(--bg-panel); color: #fff; }
 
         textarea {
             resize: vertical;
@@ -288,7 +291,13 @@
         const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
         
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let _supabaseClient = null;
+        function getSupabase() {
+            if (!_supabaseClient && typeof supabase !== 'undefined') {
+                _supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return _supabaseClient;
+        }
 
         // Initialize defaults
         function initDefaults() {
@@ -339,6 +348,8 @@
 
         document.getElementById('submit-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const client = getSupabase();
+            if (!client) { alert('Supabase client not loaded! Please check your connection or script tags.'); return; }
             
             const btn = document.getElementById('submit-btn');
             const msg = document.getElementById('status-msg');
@@ -358,13 +369,13 @@
                     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
                     const filePath = `flyers/${fileName}`;
 
-                    const { error: uploadError } = await _supabase.storage
+                    const { error: uploadError } = await client.storage
                         .from('event-images')
                         .upload(filePath, file);
 
                     if (uploadError) throw new Error('Upload error: ' + uploadError.message);
 
-                    const { data: { publicUrl } } = _supabase.storage
+                    const { data: { publicUrl } } = client.storage
                         .from('event-images')
                         .getPublicUrl(filePath);
                         
@@ -390,7 +401,7 @@
                     status: 'pending'
                 };
 
-                const { data, error } = await _supabase.from('events').insert([eventData]);
+                const { data, error } = await client.from('events').insert([eventData]);
 
                 if (error) throw error;
 
