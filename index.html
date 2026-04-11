@@ -1990,13 +1990,16 @@
             const endDate = document.getElementById('end_date').value;
             const endTime = document.getElementById('end_time_select').value;
 
+            const startDt = new Date(`${startDate}T${startTime}:00`);
+            const endDt = (endDate && endTime) ? new Date(`${endDate}T${endTime}:00`) : null;
+
             const eventData = {
                 title: document.getElementById('title').value,
                 tag: document.getElementById('tag').value,
                 description: document.getElementById('description').value,
                 image_url: document.getElementById('image_url').value,
-                start_time: `${startDate}T${startTime}:00`,
-                end_time: (endDate && endTime) ? `${endDate}T${endTime}:00` : null,
+                start_time: startDt.toISOString(),
+                end_time: endDt ? endDt.toISOString() : null,
                 location_name: document.getElementById('location_name').value,
                 address: document.getElementById('address').value,
                 lat: document.getElementById('lat').value ? parseFloat(document.getElementById('lat').value) : null,
