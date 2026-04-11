@@ -452,13 +452,16 @@
                     }
                 }
 
+                const startDt = new Date(`${startDate}T${startTime}:00`);
+                const endDt = (endDate && endTime) ? new Date(`${endDate}T${endTime}:00`) : null;
+
                 const eventData = {
                     email: document.getElementById('email').value,
                     title: document.getElementById('title').value,
                     tag: document.getElementById('tag').value,
                     image_url: image_url,
-                    start_time: `${startDate}T${startTime}:00`,
-                    end_time: (endDate && endTime) ? `${endDate}T${endTime}:00` : null,
+                    start_time: startDt.toISOString(),
+                    end_time: endDt ? endDt.toISOString() : null,
                     location_name: locationVal,
                     address: addressVal || null,
                     description: document.getElementById('description').value || null,
