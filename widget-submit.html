@@ -231,6 +231,21 @@
             color: #ff4757;
             border: 1px solid rgba(255, 71, 87, 0.1);
         }
+
+        /* Success Modal */
+        .success-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .success-overlay.open { display: flex; }
+        .success-modal {
+            background: var(--bg-panel); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: 48px; text-align: center;
+            max-width: 400px; width: 90%; box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+        }
+        .success-icon { width: 64px; height: 64px; background: rgba(0, 255, 136, 0.1); color: #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+        .success-icon svg { width: 32px; height: 32px; fill: currentColor; }
     </style>
 </head>
 <body>
@@ -303,6 +318,17 @@
             </div>
             <div id="status-msg"></div>
         </form>
+    </div>
+
+    <div class="success-overlay" id="success-overlay">
+        <div class="success-modal">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </div>
+            <h2 style="margin: 0 0 12px 0; font-size: 24px;">Success!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 15px; line-height: 1.6;">Your event has been submitted for review. It will be published once approved.</p>
+            <button class="btn-submit" id="success-close" style="width: auto; padding-left: 40px; padding-right: 40px;">Got it</button>
+        </div>
     </div>
 
     <script>
@@ -405,6 +431,27 @@
                 const endDate = document.getElementById('end_date').value;
                 const endTime = document.getElementById('end_time_select').value;
 
+                const addressVal = document.getElementById('address').value;
+                const locationVal = document.getElementById('location_name').value;
+                let lat = null;
+                let lng = null;
+
+                if (addressVal || locationVal) {
+                    try {
+                        const query = encodeURIComponent(addressVal ? addressVal : locationVal);
+                        const geoResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+                        if (geoResp.ok) {
+                            const data = await geoResp.json();
+                            if (data && data.length > 0) {
+                                lat = parseFloat(data[0].lat);
+                                lng = parseFloat(data[0].lon);
+                            }
+                        }
+                    } catch (geoErr) {
+                        console.warn("Geocoding failed:", geoErr);
+                    }
+                }
+
                 const eventData = {
                     email: document.getElementById('email').value,
                     title: document.getElementById('title').value,
@@ -412,20 +459,22 @@
                     image_url: image_url,
                     start_time: `${startDate}T${startTime}:00`,
                     end_time: (endDate && endTime) ? `${endDate}T${endTime}:00` : null,
-                    location_name: document.getElementById('location_name').value,
-                    address: document.getElementById('address').value || null,
+                    location_name: locationVal,
+                    address: addressVal || null,
                     description: document.getElementById('description').value || null,
                     ticket_url: document.getElementById('ticket_url').value || null,
-                    status: 'pending'
+                    status: 'pending',
+                    lat: lat,
+                    lng: lng
                 };
 
                 const { data, error } = await client.from('events').insert([eventData]);
 
                 if (error) throw error;
 
-                msg.textContent = 'Success! Your event has been submitted for review.';
-                msg.className = 'success';
+                document.getElementById('success-overlay').classList.add('open');
                 document.getElementById('submit-form').reset();
+                initDefaults();
 
             } catch (err) {
                 console.error(err);
@@ -435,6 +484,10 @@
                 btn.disabled = false;
                 btn.textContent = 'Submit for Review';
             }
+        });
+
+        document.getElementById('success-close').addEventListener('click', () => {
+            document.getElementById('success-overlay').classList.remove('open');
         });
     </script>
 </body>
