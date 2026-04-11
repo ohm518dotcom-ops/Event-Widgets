@@ -413,6 +413,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                 <input type="text" class="ohm-search-input" id="ohm-search" placeholder="Search events..." autocomplete="off">
             </div>
+            <label id="ohm-archive-toggle-wrapper" style="display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none; margin-left: auto;">
+                <input type="checkbox" id="ohm-archive-checkbox" style="accent-color: var(--text-primary); cursor: pointer;">
+                Archive
+            </label>
         </div>
         <div class="ohm-cards-grid" id="ohm-cards-grid">
             <div class="ohm-state-msg"><div class="ohm-loader" style="display:block;"></div><p>Loading events...</p></div>
@@ -455,6 +459,57 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     let currentFilter = 'upcoming'; 
     let searchQuery = '';
     let selectedDateFilter = null; // Stored as "YYYY-MM-DD"
+    
+    let archiveFetched = false;
+    const archiveCheckbox = document.getElementById('ohm-archive-checkbox');
+    if (archiveCheckbox) {
+        archiveCheckbox.addEventListener('change', async () => {
+            if (archiveCheckbox.checked && !archiveFetched) {
+                await fetchArchiveEvents();
+            } else {
+                applyFilters();
+            }
+        });
+    }
+
+    async function fetchArchiveEvents() {
+        loader.style.display = 'block';
+        if (!USE_REAL_SUPABASE) {
+            allEvents.push({
+                id: 'mock-archive-1',
+                title: 'Past Event: The Beginning', description: 'This is a test archived event.',
+                start_time: new Date(Date.now() - 30 * 86400000).toISOString(), location_name: 'Archive Hall', address: '123 Old St',
+                tag: 'Community', lat: 42.6600, lng: -73.7600
+            });
+            allEvents.forEach(e => { e._dateObj = new Date(e.start_time); });
+            allEvents.sort((a,b) => a._dateObj - b._dateObj);
+            archiveFetched = true;
+            loader.style.display = 'none';
+            applyFilters();
+            return;
+        }
+
+        try {
+            const nowISO = new Date().toISOString();
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=lt.${nowISO}&order=start_time.desc&limit=100`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            if(response.ok) {
+                const fetchedEvents = await response.json();
+                fetchedEvents.forEach(fe => {
+                    if (!allEvents.find(e => e.id === fe.id)) {
+                        fe._dateObj = new Date(fe.start_time);
+                        allEvents.push(fe);
+                    }
+                });
+                allEvents.sort((a,b) => a._dateObj - b._dateObj);
+                archiveFetched = true;
+            }
+        } catch(e) { console.error('Error fetching archive:', e); } finally {
+            loader.style.display = 'none';
+            applyFilters();
+        }
+    }
 
     async function fetchEvents() {
         loader.style.display = 'block';
@@ -638,6 +693,11 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         if (currentFilter === 'all') titleEl.textContent = "All Events";
         if (currentFilter === 'map') titleEl.textContent = "Map View";
         
+        const archiveWrapper = document.getElementById('ohm-archive-toggle-wrapper');
+        if (archiveWrapper) {
+            archiveWrapper.style.display = currentFilter === 'all' ? 'flex' : 'none';
+        }
+        
         if (currentFilter !== 'map') {
             cardsGrid.style.display = ''; 
             mapContainer.style.display = 'none';
@@ -692,13 +752,14 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     function applyFilters() {
         let filtered = allEvents;
         const now = new Date();
+        const archiveCheckbox = document.getElementById('ohm-archive-checkbox');
         
         if (currentFilter === 'calendar_date' && selectedDateFilter) {
             const [y, m, d] = selectedDateFilter.split('-').map(Number);
             filtered = filtered.filter(e => e._dateObj.getFullYear() === y && 
                                             e._dateObj.getMonth() === m - 1 && 
                                             e._dateObj.getDate() === d);
-        } else if (currentFilter === 'upcoming' || currentFilter === 'map') {
+        } else if (currentFilter === 'upcoming' || currentFilter === 'map' || (currentFilter === 'all' && (!archiveCheckbox || !archiveCheckbox.checked))) {
             const upcomingThreshold = new Date();
             upcomingThreshold.setHours(0,0,0,0);
             filtered = filtered.filter(e => e._dateObj >= upcomingThreshold);
