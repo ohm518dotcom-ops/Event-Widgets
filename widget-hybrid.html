@@ -1053,13 +1053,17 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     }
                 }
 
+                const startDt = new Date(`${document.getElementById('ohm_start_date').value}T${document.getElementById('ohm_start_time_select').value}:00`);
+                const endDtStr = (document.getElementById('ohm_end_date').value && document.getElementById('ohm_end_time_select').value) ? `${document.getElementById('ohm_end_date').value}T${document.getElementById('ohm_end_time_select').value}:00` : null;
+                const endDt = endDtStr ? new Date(endDtStr) : null;
+
                 const eventData = {
                     email: document.getElementById('ohm_email').value,
                     title: document.getElementById('ohm_title').value,
                     tag: document.getElementById('ohm_tag').value,
                     image_url: image_url,
-                    start_time: `${document.getElementById('ohm_start_date').value}T${document.getElementById('ohm_start_time_select').value}:00`,
-                    end_time: (document.getElementById('ohm_end_date').value && document.getElementById('ohm_end_time_select').value) ? `${document.getElementById('ohm_end_date').value}T${document.getElementById('ohm_end_time_select').value}:00` : null,
+                    start_time: startDt.toISOString(),
+                    end_time: endDt ? endDt.toISOString() : null,
                     location_name: locationVal,
                     address: addressVal || null,
                     description: document.getElementById('ohm_description').value || null,
