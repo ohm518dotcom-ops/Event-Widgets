@@ -695,7 +695,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         
         const archiveWrapper = document.getElementById('ohm-archive-toggle-wrapper');
         if (archiveWrapper) {
-            archiveWrapper.style.display = currentFilter === 'all' ? 'flex' : 'none';
+            archiveWrapper.style.display = (currentFilter === 'all' || currentFilter === 'map') ? 'flex' : 'none';
         }
         
         if (currentFilter !== 'map') {
@@ -759,7 +759,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
             filtered = filtered.filter(e => e._dateObj.getFullYear() === y && 
                                             e._dateObj.getMonth() === m - 1 && 
                                             e._dateObj.getDate() === d);
-        } else if (currentFilter === 'upcoming' || currentFilter === 'map' || (currentFilter === 'all' && (!archiveCheckbox || !archiveCheckbox.checked))) {
+        } else if (currentFilter === 'upcoming' || ((currentFilter === 'map' || currentFilter === 'all') && (!archiveCheckbox || !archiveCheckbox.checked))) {
             const upcomingThreshold = new Date();
             upcomingThreshold.setHours(0,0,0,0);
             filtered = filtered.filter(e => e._dateObj >= upcomingThreshold);
@@ -1032,6 +1032,27 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     image_url = publicUrl;
                 }
 
+                const addressVal = document.getElementById('ohm_address').value;
+                const locationVal = document.getElementById('ohm_location_name').value;
+                let lat = null;
+                let lng = null;
+
+                if (addressVal || locationVal) {
+                    try {
+                        const query = encodeURIComponent(addressVal ? addressVal : locationVal);
+                        const geoResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+                        if (geoResp.ok) {
+                            const data = await geoResp.json();
+                            if (data && data.length > 0) {
+                                lat = parseFloat(data[0].lat);
+                                lng = parseFloat(data[0].lon);
+                            }
+                        }
+                    } catch (geoErr) {
+                        console.warn("Geocoding failed:", geoErr);
+                    }
+                }
+
                 const eventData = {
                     email: document.getElementById('ohm_email').value,
                     title: document.getElementById('ohm_title').value,
@@ -1039,11 +1060,13 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     image_url: image_url,
                     start_time: `${document.getElementById('ohm_start_date').value}T${document.getElementById('ohm_start_time_select').value}:00`,
                     end_time: (document.getElementById('ohm_end_date').value && document.getElementById('ohm_end_time_select').value) ? `${document.getElementById('ohm_end_date').value}T${document.getElementById('ohm_end_time_select').value}:00` : null,
-                    location_name: document.getElementById('ohm_location_name').value,
-                    address: document.getElementById('ohm_address').value || null,
+                    location_name: locationVal,
+                    address: addressVal || null,
                     description: document.getElementById('ohm_description').value || null,
                     ticket_url: document.getElementById('ohm_ticket_url').value || null,
-                    status: 'pending'
+                    status: 'pending',
+                    lat: lat,
+                    lng: lng
                 };
 
                 const { error } = await client.from('events').insert([eventData]);
