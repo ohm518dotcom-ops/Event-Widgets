@@ -33,7 +33,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-cards-count { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
 
 .ohm-cards-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
 }
 
 @media (max-width: 600px) {
@@ -109,21 +109,6 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 </style>
 
 <div class="ohm-cards-widget" id="ohm-cards-container">
-    <div class="ohm-cards-header">
-        <div class="ohm-cards-title" id="ohm-view-title">Upcoming Events</div>
-        <div class="ohm-cards-count" id="ohm-event-count">...</div>
-    </div>
-    <div class="ohm-cards-filters">
-        <div class="ohm-filter-btns">
-            <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
-            <button class="ohm-filter-btn" data-filter="today">Today</button>
-            <button class="ohm-filter-btn" data-filter="all">All</button>
-        </div>
-        <div class="ohm-search-container">
-            <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" class="ohm-search-input" id="ohm-search" placeholder="Search events..." autocomplete="off">
-        </div>
-    </div>
     <div class="ohm-cards-grid" id="ohm-cards-grid">
         <div class="ohm-state-msg"><div class="ohm-loader"></div><p>Loading events...</p></div>
     </div>
@@ -138,35 +123,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     const USE_REAL_SUPABASE = true; 
 
     const grid = document.getElementById('ohm-cards-grid');
-    const countEl = document.getElementById('ohm-event-count');
-    const titleEl = document.getElementById('ohm-view-title');
-    const searchInput = document.getElementById('ohm-search');
-    const filterBtns = document.querySelectorAll('.ohm-filter-btn');
 
     let allEvents = [];
-    let currentFilter = 'upcoming'; 
-    let searchQuery = '';
-
-    // Event Listeners
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase();
-        applyFilters();
-    });
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentFilter = e.target.getAttribute('data-filter');
-            
-            // Update Title
-            if (currentFilter === 'upcoming') titleEl.textContent = "Upcoming Events";
-            if (currentFilter === 'today') titleEl.textContent = "Today's Events";
-            if (currentFilter === 'all') titleEl.textContent = "All Events";
-            
-            applyFilters();
-        });
-    });
 
     async function fetchEvents() {
         if (!USE_REAL_SUPABASE) {
@@ -185,64 +143,30 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                     tag: 'Art / Music'
                 }
             ];
-            setTimeout(() => applyFilters(), 500);
+            setTimeout(() => renderCards(allEvents), 500);
             return;
         }
 
         try {
-            // Fetch a bigger chunk (from today onwards) so we can filter locally
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${todayStart.toISOString()}&order=start_time.asc&limit=100`, {
+            // Fetch exactly 3 upcoming events
+            const now = new Date().toISOString();
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=3`, {
                 headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
             });
-            if(response.ok) allEvents = await response.json();
-            applyFilters();
+            if(response.ok) {
+                allEvents = await response.json();
+                renderCards(allEvents);
+            } else {
+                throw new Error("Failed to fetch");
+            }
         } catch(e) { 
             console.error("Cards Widget err:", e);
             grid.innerHTML = `<div class="ohm-state-msg"><p>Failed to load events.</p></div>`;
-            countEl.textContent = "0 events";
         }
-    }
-
-    function applyFilters() {
-        if (allEvents.length === 0) { renderCards([]); return; }
-
-        let filtered = allEvents;
-        const now = new Date();
-        
-        // Date Filter constraints
-        if (currentFilter === 'upcoming') {
-            filtered = filtered.filter(e => new Date(e.start_time) >= now);
-        } else if (currentFilter === 'today') {
-            const todayEnd = new Date(now);
-            todayEnd.setHours(23, 59, 59, 999);
-            const todayStart = new Date(now);
-            todayStart.setHours(0,0,0,0);
-            filtered = filtered.filter(e => {
-                const start = new Date(e.start_time);
-                return start >= todayStart && start <= todayEnd;
-            });
-        } 
-        // 'all' includes everything fetched (which is from todayStart onwards)
-
-        // Search Filter constraint
-        if (searchQuery) {
-            filtered = filtered.filter(e => {
-                const q = searchQuery;
-                const matchTitle = e.title && e.title.toLowerCase().includes(q);
-                const matchLocation = e.location_name && e.location_name.toLowerCase().includes(q);
-                const matchDesc = e.description && e.description.toLowerCase().includes(q);
-                return matchTitle || matchLocation || matchDesc;
-            });
-        }
-
-        renderCards(filtered);
     }
 
     function renderCards(events) {
         grid.innerHTML = '';
-        countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
 
         if (events.length === 0) {
             grid.innerHTML = `<div class="ohm-state-msg"><p>No upcoming events found.</p></div>`;
