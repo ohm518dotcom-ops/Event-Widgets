@@ -41,8 +41,8 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-card:hover { border-color: var(--border-hover); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); }
 
 .ohm-card-img { 
-    width: 100%; aspect-ratio: 2 / 3; object-fit: cover; 
-    background-color: #161616; display: block; transition: var(--transition);
+    width: 100%; aspect-ratio: 2 / 3; object-fit: contain; object-position: center;
+    background-color: #0d0d0d; display: block; transition: var(--transition);
 }
 .ohm-card:hover .ohm-card-img { filter: brightness(1.1); }
 
