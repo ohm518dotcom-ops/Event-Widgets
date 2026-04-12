@@ -969,8 +969,9 @@
         .card-image {
             width: 100%;
             aspect-ratio: 4 / 5;
-            background: #111;
-            object-fit: cover;
+            background: #0d0d0d;
+            object-fit: contain;
+            object-position: center;
             border-bottom: 1px solid var(--border-subtle);
         }
 
@@ -1096,7 +1097,7 @@
             transition: all 0.2s;
         }
         .ohm-card:hover { border-color: var(--border-hover); }
-        .ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-bottom: 1px solid var(--border-subtle); }
+        .ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #0d0d0d; border-bottom: 1px solid var(--border-subtle); }
         .ohm-card-content { padding: 14px; display: flex; flex-direction: column; }
         .ohm-card-tag { font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
         .ohm-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
