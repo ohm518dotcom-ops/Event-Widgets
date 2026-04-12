@@ -428,11 +428,32 @@
             color: var(--text-secondary);
             line-height: 1.5;
             margin-top: 16px;
+            margin-bottom: 8px;
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
             flex-grow: 1;
+        }
+
+        .ce-event-desc.expanded {
+            -webkit-line-clamp: unset;
+        }
+
+        .ce-read-more {
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            display: none;
+        }
+
+        .ce-read-more:hover {
+            opacity: 1;
+            text-decoration: underline;
         }
 
         /* States (Loading, Empty) */
@@ -884,7 +905,10 @@
                         <span>${event.location_name}</span>
                     </div>` : ''}
                     
-                    ${event.description ? `<div class="ce-event-desc">${event.description}</div>` : ''}
+                    ${event.description ? `
+                        <div class="ce-event-desc">${event.description}</div>
+                        <div class="ce-read-more">Read More</div>
+                    ` : ''}
                 </div>
             `;
 
@@ -895,7 +919,33 @@
 
             DOM.eventsContainer.appendChild(card);
         });
+
+        // Detect truncation and show Read More
+        setTimeout(() => {
+            document.querySelectorAll('.ce-event-card').forEach(card => {
+                const desc = card.querySelector('.ce-event-desc');
+                const btn = card.querySelector('.ce-read-more');
+                if (desc && btn) {
+                    if (desc.scrollHeight > desc.clientHeight) {
+                        btn.style.display = 'block';
+                    }
+                }
+            });
+        }, 50);
     }
+
+    // Toggle Read More (via event delegation)
+    DOM.eventsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ce-read-more')) {
+            const btn = e.target;
+            const desc = btn.previousElementSibling;
+            const isExpanded = desc.classList.toggle('expanded');
+            btn.textContent = isExpanded ? 'Read Less' : 'Read More';
+            
+            // Re-sync map if height change causes layout issues (optional but safe)
+            if(map) map.invalidateSize();
+        }
+    });
 
     function setFilter(filterType) {
         currentFilter = filterType;
