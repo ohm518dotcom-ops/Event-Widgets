@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body { background-color: #060606; margin: 0; padding: 24px; }
+body { background-color: transparent; margin: 0; padding: 0; }
 /* Vibe & Variables */
 .ohm-hybrid-layout {
     --surface-color: #0f0f0f;
@@ -127,21 +127,30 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 }
 
 .ohm-card {
-    background-color: var(--surface-color); border: 1px solid var(--border-color);
+    background-color: transparent; border: 1px solid var(--border-color);
     border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
     transition: var(--transition); height: 100%;
 }
-.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
-.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #0d0d0d; border-bottom: 1px solid var(--border-color); }
+.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
 .ohm-card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
 .ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
 .ohm-card-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
 .ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
 .ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
 .ohm-card-desc {
-    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 16px;
+    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 8px;
     display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
 }
+.ohm-card-desc.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+.ohm-read-more {
+    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
+    margin-bottom: 16px; opacity: 0.8; transition: opacity 0.2s; display: none;
+}
+.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
 .ohm-ticket-btn {
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
     background-color: var(--text-primary); color: #000; padding: 10px 16px;
@@ -903,7 +912,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}
-                    ${event.description ? `<div class="ohm-card-desc">${event.description}</div>` : '<div style="flex-grow:1;"></div>'}
+                    ${event.description ? `
+                        <div class="ohm-card-desc">${event.description}</div>
+                        <div class="ohm-read-more">Read More</div>
+                    ` : '<div style="flex-grow:1;"></div>'}
                     ${event.ticket_url ? `
                     <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
                         Get Tickets
@@ -913,6 +925,51 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 </div>
             `;
             cardsGrid.appendChild(card);
+        });
+
+        // After rendering, detect if truncation is happening and show Read More
+        setTimeout(() => {
+            document.querySelectorAll('.ohm-card').forEach(card => {
+                const desc = card.querySelector('.ohm-card-desc');
+                const btn = card.querySelector('.ohm-read-more');
+                if (desc && btn) {
+                    if (desc.scrollHeight > desc.clientHeight) {
+                        btn.style.display = 'block';
+                    }
+                }
+            });
+        }, 50);
+    }
+
+    // Toggle Read More (Global delegation to cover grid and map popups)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ohm-read-more')) {
+            const btn = e.target;
+            const desc = btn.previousElementSibling;
+            if (desc && desc.classList.contains('ohm-card-desc')) {
+                const isExpanded = desc.classList.toggle('expanded');
+                btn.textContent = isExpanded ? 'Read Less' : 'Read More';
+                
+                // If it's in a map popup, we might need to update the popup position
+                if (btn.closest('.leaflet-popup-content')) {
+                    const popup = map._popup;
+                    if (popup) popup.update();
+                }
+            }
+        }
+    });
+
+    // Detect truncation in map popups
+    if (map) {
+        map.on('popupopen', (e) => {
+            const container = e.popup._container;
+            const desc = container.querySelector('.ohm-card-desc');
+            const btn = container.querySelector('.ohm-read-more');
+            if (desc && btn) {
+                if (desc.scrollHeight > desc.clientHeight) {
+                    btn.style.display = 'block';
+                }
+            }
         });
     }
 
