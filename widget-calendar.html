@@ -1,7 +1,7 @@
 <!-- WEBFLOW EMBED: Calendar Widget Starts -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
-body { background-color: #060606; margin: 0; padding: 24px; }
+body { background-color: transparent; margin: 0; padding: 0; }
 /* Vibe & Variables */
 .ohm-calendar-layout {
     --bg-color: #0f0f0f;
@@ -174,7 +174,19 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
 .ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
 .ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
-.ohm-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ohm-card-desc {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+}
+.ohm-card-desc.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+.ohm-read-more {
+    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
+    margin-bottom: 14px; opacity: 0.8; transition: opacity 0.2s; display: none;
+}
+.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
 .ohm-ticket-btn {
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
     background-color: var(--text-primary); color: #000; padding: 9px 14px;
@@ -430,7 +442,10 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}
-                    ${event.description ? `<div class="ohm-card-desc">${event.description}</div>` : '<div style="flex-grow:1;"></div>'}
+                    ${event.description ? `
+                        <div class="ohm-card-desc">${event.description}</div>
+                        <div class="ohm-read-more">Read More</div>
+                    ` : '<div style="flex-grow:1;"></div>'}
                     ${event.ticket_url ? `
                     <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
                         Get Tickets
@@ -444,6 +459,30 @@ body { background-color: #060606; margin: 0; padding: 24px; }
         
         
     }
+
+    // Toggle Read More
+    detailsContent.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ohm-read-more')) {
+            const btn = e.target;
+            const desc = btn.previousElementSibling;
+            const isExpanded = desc.classList.toggle('expanded');
+            btn.textContent = isExpanded ? 'Read Less' : 'Read More';
+        }
+    });
+
+    // Detect truncation in details
+    const observer = new MutationObserver(() => {
+        detailsContent.querySelectorAll('.ohm-card').forEach(card => {
+            const desc = card.querySelector('.ohm-card-desc');
+            const btn = card.querySelector('.ohm-read-more');
+            if (desc && btn && btn.style.display !== 'block') {
+                if (desc.scrollHeight > desc.clientHeight) {
+                    btn.style.display = 'block';
+                }
+            }
+        });
+    });
+    observer.observe(detailsContent, { childList: true });
 
     document.getElementById('ohm-prev').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
