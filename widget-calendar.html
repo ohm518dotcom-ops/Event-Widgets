@@ -1,1059 +1,462 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Calendar Embed</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<!-- WEBFLOW EMBED: Calendar Widget Starts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+body { background-color: #060606; margin: 0; padding: 24px; }
+/* Vibe & Variables */
+.ohm-calendar-layout {
+    --bg-color: #0f0f0f;
+    --text-primary: #f0f0f0;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --border-color: #1a1a1a;
+    --border-hover: #333333;
+    --accent-color: #ffffff;
+    --glass-hover: rgba(255, 255, 255, 0.08);
+    --font-family: 'Inter', sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --transition: all 0.2s ease;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 850px;
+    font-family: var(--font-family);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.ohm-calendar-layout * { box-sizing: border-box; margin: 0; padding: 0; }
+@media (min-width: 768px) {
+    .ohm-calendar-layout { flex-direction: row; align-items: stretch; gap: 20px; }
+}
+
+.ohm-calendar-widget {
+    background-color: transparent;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    border: none;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+@media (min-width: 768px) {
+    .ohm-calendar-widget { flex: 1; min-width: 300px; padding: 0; }
+}
+
+/* Base: Mobile acts as an absolute overlay modal */
+.ohm-calendar-details {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 100;
+    background-color: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    overflow-y: auto;
+}
+.ohm-calendar-details.active { display: flex; }
+
+/* Desktop: Acts as a side-by-side equal height panel */
+@media (min-width: 768px) {
+    .ohm-calendar-details { 
+        position: static; 
+        display: flex;
+        flex: 1; 
+        background-color: transparent;
+        border: none;
+        backdrop-filter: none;
+        padding: 0;
+        z-index: 1;
+        border-radius: var(--radius-lg);
+        overflow-y: visible;
+    }
+}
+
+.ohm-calendar-details-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.ohm-calendar-details-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+
+.ohm-calendar-details-close {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); color: #fff; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+}
+.ohm-calendar-details-close svg { fill: currentColor; width: 20px; height: 20px; }
+.ohm-calendar-details-close:hover { background-color: var(--glass-hover); }
+
+/* Hide close button on desktop */
+@media (min-width: 768px) {
+    .ohm-calendar-details-close { display: none; }
+}
+
+.ohm-calendar-details-content { display: flex; flex-direction: column; gap: 14px; flex-grow: 1; }
+.ohm-empty-state { color: var(--text-secondary); font-size: 14px; text-align: center; margin: auto; padding: 32px 0; }
+
+
+.ohm-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.ohm-calendar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+
+.ohm-nav-btns { display: flex; gap: 6px; }
+
+.ohm-icon-btn {
+    background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+    cursor: pointer; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+}
+
+.ohm-icon-btn:hover { background-color: var(--glass-hover); color: var(--text-primary); border-color: var(--border-color); }
+.ohm-icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+.ohm-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+    font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+.ohm-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+
+.ohm-day {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; border-radius: var(--radius-sm); font-size: 14px;
+    transition: var(--transition); position: relative; user-select: none;
+}
+
+.ohm-day.active-month:hover { background-color: var(--glass-hover); cursor: pointer; }
+.ohm-day.other-month { color: #333; }
+
+.ohm-day.today { font-weight: 700; }
+.ohm-day.today::before {
+    content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+    width: 5px; height: 5px; background-color: var(--accent-color);
+    border-radius: 50%;
+}
+
+.ohm-day.selected {
+    background-color: var(--text-primary); color: #000; font-weight: 700;
+    border: none !important;
+}
+
+.ohm-day.has-events { 
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* Loader */
+.ohm-loader {
+    width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.08);
+    border-top-color: var(--accent-color); border-radius: 50%;
+    animation: ohm-spin 1s linear infinite; display: none; margin-left: auto;
+}
+.ohm-calendar-widget.loading .ohm-loader { display: block; }
+@keyframes ohm-spin { to { transform: rotate(360deg); } }
+
+/* Card Styles */
+.ohm-card {
+    background-color: var(--bg-color); border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column;
+    transition: var(--transition);
+}
+.ohm-card:hover { border-color: var(--border-hover); }
+.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #0d0d0d; border-bottom: 1px solid var(--border-color); }
+.ohm-card-content { padding: 16px; display: flex; flex-direction: column; }
+.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
+.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
+.ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
+.ohm-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ohm-ticket-btn {
+    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+    background-color: var(--text-primary); color: #000; padding: 9px 14px;
+    border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 600;
+    transition: var(--transition); border: 1px solid transparent; width: 100%;
+}
+.ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
+</style>
+
+<div class="ohm-calendar-layout" id="ohm-calendar-layout">
+    <div class="ohm-calendar-widget" id="ohm-calendar">
+    <div class="ohm-calendar-header">
+        <div class="ohm-calendar-title" id="ohm-month-year">Month Year</div>
+        <div class="ohm-loader"></div>
+        <div class="ohm-nav-btns">
+            <button class="ohm-icon-btn" id="ohm-prev" aria-label="Previous Month">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <button class="ohm-icon-btn" id="ohm-next" aria-label="Next Month">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </button>
+        </div>
+    </div>
     
-    <style>
-        /* Base Vibe & Variables (ohm518.com inspired) */
-        :root {
-            --bg-color: #000000;
-            --surface-color: #111111;
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --border-color: #333333;
-            --accent-color: #ffffff; /* pure white for accents */
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-hover: rgba(255, 255, 255, 0.15);
-            --glass-active: rgba(255, 255, 255, 0.25);
-            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --border-radius-pill: 50px;
-            --border-radius-card: 16px;
-            --transition: all 0.2s ease;
-        }
-
-        /* Essential Reset for Embed */
-        #calendar-embed-container * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: var(--font-family);
-        }
-
-        #calendar-embed-container {
-            width: 100%;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: var(--font-family);
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            /* Container padding to ensure it breathes when embedded */
-            padding: 20px 0;
-        }
-
-        /* Filters & Search Header */
-        .ce-header {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .ce-filters {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .ce-btn {
-            background-color: var(--glass-bg);
-            color: var(--text-secondary);
-            border: 1px solid transparent;
-            padding: 10px 20px;
-            border-radius: var(--border-radius-pill);
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .ce-btn:hover {
-            background-color: var(--glass-hover);
-            color: var(--text-primary);
-        }
-
-        .ce-btn.active {
-            background-color: var(--glass-active);
-            color: var(--text-primary);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .ce-search-wrapper {
-            position: relative;
-            flex-grow: 1;
-            max-width: 300px;
-        }
-
-        .ce-search-input {
-            width: 100%;
-            background-color: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 10px 20px 10px 40px;
-            border-radius: var(--border-radius-pill);
-            font-size: 14px;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        .ce-search-input:focus {
-            border-color: var(--text-secondary);
-            background-color: var(--glass-hover);
-        }
-
-        .ce-search-input::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .ce-search-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            fill: var(--text-secondary);
-            pointer-events: none;
-        }
-
-        /* Main Grid: Calendar + Map */
-        .ce-main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            min-height: 400px;
-        }
-
-        @media (max-width: 768px) {
-            .ce-main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Calendar Section */
-        .ce-calendar-container {
-            background-color: var(--surface-color);
-            border-radius: var(--border-radius-card);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border-color);
-        }
-
-        .ce-calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .ce-calendar-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .ce-nav-btns {
-            display: flex;
-            gap: 8px;
-        }
-
-        .ce-icon-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .ce-icon-btn:hover {
-            background-color: var(--glass-hover);
-            color: var(--text-primary);
-        }
-        
-        .ce-icon-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
-        .ce-weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-        }
-
-        .ce-days-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-
-        .ce-day {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: var(--transition);
-            position: relative;
-            user-select: none;
-        }
-
-        .ce-day:hover:not(.empty) {
-            background-color: var(--glass-hover);
-        }
-
-        .ce-day.empty {
-            cursor: default;
-        }
-
-        .ce-day.other-month {
-            color: #444;
-        }
-
-        .ce-day.today {
-            background-color: var(--text-primary);
-            color: var(--bg-color);
-            font-weight: 600;
-        }
-
-        .ce-day.today.has-events .ce-event-dot {
-            background-color: var(--bg-color);
-        }
-
-        .ce-day.selected {
-            border: 2px solid var(--accent-color);
-        }
-        
-        /* Overrides if today is selected */
-        .ce-day.today.selected {
-            border: 2px solid var(--border-color); /* contrast against white bg */
-        }
-
-        .ce-event-dot {
-            width: 4px;
-            height: 4px;
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            position: absolute;
-            bottom: 6px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .ce-day.has-events .ce-event-dot {
-            opacity: 1;
-        }
-
-        /* Map Section */
-        .ce-map-container {
-            border-radius: var(--border-radius-card);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface-color);
-            position: relative;
-            min-height: 400px;
-        }
-
-        #ce-map {
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* Custom Leaflet Dark Theme Overrides */
-        .leaflet-container {
-            background-color: #000;
-            font-family: var(--font-family);
-        }
-        .leaflet-bar a {
-            background-color: var(--surface-color) !important;
-            color: var(--text-primary) !important;
-            border-color: var(--border-color) !important;
-        }
-        .leaflet-bar a:hover {
-            background-color: var(--border-color) !important;
-        }
-        /* Custom map tooltips */
-        .ce-map-tooltip {
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        .leaflet-tooltip-left.ce-map-tooltip::before { border-left-color: var(--border-color); }
-        .leaflet-tooltip-right.ce-map-tooltip::before { border-right-color: var(--border-color); }
-        .leaflet-tooltip-top.ce-map-tooltip::before { border-top-color: var(--border-color); }
-        .leaflet-tooltip-bottom.ce-map-tooltip::before { border-bottom-color: var(--border-color); }
-
-        /* Custom Marker style */
-        .ce-custom-marker {
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            border: 2px solid var(--bg-color);
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
-            transition: transform 0.2s;
-        }
-        .ce-custom-marker.active-marker {
-            transform: scale(1.5);
-            background-color: #fff;
-            box-shadow: 0 0 15px rgba(255,255,255,0.6);
-            z-index: 1000 !important;
-        }
-
-        /* Event List Section */
-        .ce-event-list-header {
-            margin-top: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-
-        .ce-list-title {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .ce-event-count {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .ce-events-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 24px;
-        }
-
-        .ce-event-card {
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-card);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
-            cursor: pointer;
-            height: 100%;
-        }
-
-        .ce-event-card:hover, .ce-event-card.active {
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-        
-        .ce-event-card.active {
-            border-color: var(--accent-color);
-        }
-
-        .ce-event-img {
-            width: 100%;
-            height: 160px;
-            object-fit: contain;
-            object-position: center;
-            background-color: #0d0d0d;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .ce-event-content {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .ce-event-tag {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .ce-event-card-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-
-        .ce-event-meta {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .ce-event-meta svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-            flex-shrink: 0;
-        }
-
-        .ce-event-desc {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-top: 16px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            flex-grow: 1;
-        }
-
-        /* States (Loading, Empty) */
-        .ce-state-message {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--text-secondary);
-            background-color: var(--surface-color);
-            border-radius: var(--border-radius-card);
-            border: 1px dashed var(--border-color);
-            grid-column: 1 / -1;
-        }
-
-        .ce-loader {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: ce-spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes ce-spin {
-            to { transform: rotate(360deg); }
-        }
-
-    </style>
-</head>
-<body>
-
-<!-- WEBFLOW EMBED STARTS HERE -->
-<!-- Copy everything from this line down into the Webflow Embed Code block -->
-
-<div id="calendar-embed-container">
+    <div class="ohm-weekdays">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
     
-    <!-- Header: Filters & Search -->
-    <div class="ce-header">
-        <div class="ce-filters">
-            <button class="ce-btn active" data-filter="upcoming">Upcoming</button>
-            <button class="ce-btn" data-filter="today">Today</button>
-            <button class="ce-btn" data-filter="all">All Events</button>
-        </div>
-        
-        <div class="ce-search-wrapper">
-            <svg class="ce-search-icon" viewBox="0 0 24 24">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <input type="text" id="ce-search" class="ce-search-input" placeholder="Search events, locations..." autocomplete="off">
-        </div>
+    <div class="ohm-days-grid" id="ohm-grid"></div>
+
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="ce-main-grid">
-        <!-- Left: Calendar -->
-        <div class="ce-calendar-container">
-            <div class="ce-calendar-header">
-                <div class="ce-calendar-title" id="ce-month-year">Month Year</div>
-                <div class="ce-nav-btns">
-                    <button class="ce-icon-btn" id="ce-prev-month" aria-label="Previous Month">
-                        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                    </button>
-                    <button class="ce-icon-btn" id="ce-next-month" aria-label="Next Month">
-                        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="ce-weekdays">
-                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-            </div>
-            
-            <div class="ce-days-grid" id="ce-calendar-grid">
-                <!-- Calendar days injected by JS -->
-            </div>
+    <!-- Side Details Panel -->
+    <div class="ohm-calendar-details" id="ohm-calendar-details">
+        <div class="ohm-calendar-details-header">
+            <div class="ohm-calendar-details-title" id="ohm-details-title">Upcoming Events</div>
+            <button class="ohm-calendar-details-close" id="ohm-details-close" aria-label="Close Modal">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
         </div>
-
-        <!-- Right: Map -->
-        <div class="ce-map-container">
-            <div id="ce-map"></div>
+        <div class="ohm-calendar-details-content" id="ohm-details-content">
+            <div class="ohm-empty-state">Select a date to view events</div>
         </div>
     </div>
-
-    <!-- Event List Section -->
-    <div>
-        <div class="ce-event-list-header">
-            <div class="ce-list-title" id="ce-list-title">Upcoming Events</div>
-            <div class="ce-event-count" id="ce-event-count">0 events</div>
-        </div>
-        
-        <div class="ce-events-grid" id="ce-events-container">
-            <!-- Event cards injected by JS -->
-        </div>
-    </div>
-
 </div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
 <script>
-/**
- * Event Calendar Embed Logic
- * Built for Webflow embedded HTML element.
- * Uses Leaflet for mapping, Supabase REST API for data.
- * Vanilla JS only, fully encapsulated.
- */
 (function() {
     'use strict';
+    // CONFIG REQUIRED: Update these keys
+    const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
+    const USE_REAL_SUPABASE = true; 
 
-    // --- CONFIGURATION ---
-    // User needs to replace these with their actual Supabase project details
-    const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+    const container = document.getElementById('ohm-calendar');
+    const grid = document.getElementById('ohm-grid');
+    const monthYear = document.getElementById('ohm-month-year');
     
-    // For development/mock data without real supabase keys. Set to true to use real Supabase.
-    const USE_REAL_SUPABASE = false; 
+    let currentDate = new Date();
+    let events = [];
 
-    // --- STATE ---
-    let events = []; // All fetched events
-    let filteredEvents = []; // Events after filters applied
-    
-    let currentDate = new Date(); // Controls the calendar month view
-    let selectedDate = null; // Currently clicked date in the calendar
-    
-    let currentFilter = 'upcoming'; // 'upcoming', 'today', 'all'
-    let searchQuery = '';
-    
-    let map = null;
-    let mapMarkers = {}; // stores markers mapped to event id
-    let activeEventId = null; // currently highlighted event
-
-    // --- DOM ELEMENTS ---
-    const DOM = {
-        container: document.getElementById('calendar-embed-container'),
-        filterBtns: document.querySelectorAll('.ce-btn'),
-        searchInput: document.getElementById('ce-search'),
-        monthYearDisplay: document.getElementById('ce-month-year'),
-        prevMonthBtn: document.getElementById('ce-prev-month'),
-        nextMonthBtn: document.getElementById('ce-next-month'),
-        calendarGrid: document.getElementById('ce-calendar-grid'),
-        eventsContainer: document.getElementById('ce-events-container'),
-        listTitle: document.getElementById('ce-list-title'),
-        eventCount: document.getElementById('ce-event-count'),
-        mapContainer: document.getElementById('ce-map')
-    };
-
-    // --- INITIALIZATION ---
-    async function init() {
-        showLoadingState();
-        initMap();
-        setupEventListeners();
-        
-        await fetchEvents();
-        
-        renderCalendar();
-        applyFilters();
-    }
-
-    // --- DATA FETCHING ---
     async function fetchEvents() {
-        if (!USE_REAL_SUPABASE || SUPABASE_URL.includes('YOUR_PROJECT')) {
-            // Provide mock data if real credentials aren't set
-            console.log("Using mock data. Configure SUPABASE_URL and SUPABASE_ANON_KEY to load real data.");
-            events = getMockEvents();
+        container.classList.add('loading');
+        if (!USE_REAL_SUPABASE) {
+            // Mock data for demo
+            const now = new Date();
+            const tmrw = new Date(now); tmrw.setDate(now.getDate() + 1);
+            const nextWk = new Date(now); nextWk.setDate(now.getDate() + 7);
+            events = [
+                {
+                    title: 'Techno Night: Volume 1', description: 'Deep dark techno event running until early morning.',
+                    start_time: now, end_time: new Date(now.getTime() + 4 * 3600000), location_name: 'Empire Underground',
+                    address: '93 N Pearl St, Albany, NY 12207',
+                    image_url: 'https://images.unsplash.com/photo-1571266028243-cb40fce7573f?q=80&w=600&auto=format&fit=crop', 
+                    tag: 'Music', ticket_url: '#'
+                },
+                {
+                    title: 'DRUM & BASS: The Movement', description: 'Documentary screening & sets.',
+                    start_time: tmrw, location_name: 'Alias Coffee', address: '76 N Pearl St, Albany, NY 12207',
+                    image_url: 'https://images.unsplash.com/photo-1598387181032-a3103ea27146?q=80&w=600&auto=format&fit=crop', 
+                    tag: 'Art / Music', ticket_url: '#'
+                },
+                {
+                    title: 'Ambient Gallery', description: 'Live ambient soundscapes.',
+                    start_time: nextWk, location_name: 'Albany Barn', address: '56 2nd St, Albany, NY 12210',
+                    tag: 'Art', ticket_url: '#'
+                }
+            ];
+            setTimeout(() => { container.classList.remove('loading'); renderCalendar(); }, 500);
             return;
         }
 
         try {
-            // REST API call to Supabase
-            // Fetching all events, ordered by start time
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=start_time.asc`, {
-                method: 'GET',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                }
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
+            const startStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+            const endStr = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
             
-            // Format dates
-            events = data.map(e => ({
-                ...e,
-                start_time: new Date(e.start_time),
-                end_time: e.end_time ? new Date(e.end_time) : null
-            }));
-
-        } catch (error) {
-            console.error("Error fetching events:", error);
-            showErrorState();
-            events = [];
+            // Only fetch events for the current month view
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&start_time=gte.${startStr}&start_time=lte.${endStr}`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            if(response.ok) {
+                const data = await response.json();
+                events = data.map(e => ({ ...e, start_time: new Date(e.start_time) }));
+            }
+        } catch(e) { 
+            console.error("Calendar Widget err:", e); 
+        } finally {
+            container.classList.remove('loading');
+            renderCalendar();
         }
     }
 
-    // --- MAP LOGIC ---
-    function initMap() {
-        if (!DOM.mapContainer) return;
-        
-        // Default center (can be anywhere, bounds will auto-adjust)
-        map = L.map('ce-map', {
-            zoomControl: false // custom position if needed, or disable to keep it clean
-        }).setView([40.7128, -74.0060], 12);
-        
-        // Add zoom control to top right to keep it out of the way
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
-        // CartoDB Dark Matter tiles - matches the dark aesthetic perfectly, no API key needed
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(map);
-    }
-
-    function updateMapMarkers() {
-        if (!map) return;
-
-        // Clear existing markers
-        Object.values(mapMarkers).forEach(marker => map.removeLayer(marker));
-        mapMarkers = {};
-
-        if (filteredEvents.length === 0) return;
-
-        const bounds = L.latLngBounds();
-        let addedMarkers = 0;
-
-        filteredEvents.forEach(event => {
-            if (!event.lat || !event.lng) return;
-
-            const customIcon = L.divIcon({
-                className: `ce-custom-marker ${activeEventId === event.id ? 'active-marker' : ''}`,
-                iconSize: [12, 12],
-                iconAnchor: [6, 6]
-            });
-
-            const marker = L.marker([event.lat, event.lng], { icon: customIcon })
-                .addTo(map)
-                .bindTooltip(event.title, {
-                    className: 'ce-map-tooltip',
-                    direction: 'top',
-                    offset: [0, -8]
-                });
-
-            // Handle marker click
-            marker.on('click', () => {
-                highlightEvent(event.id);
-                scrollToEvent(event.id);
-            });
-
-            mapMarkers[event.id] = marker;
-            bounds.extend([event.lat, event.lng]);
-            addedMarkers++;
-        });
-
-        // Auto-fit bounds if we have markers
-        if (addedMarkers > 0) {
-            // wait for next tick to ensure container is rendered
-            setTimeout(() => {
-                map.invalidateSize();
-                if (addedMarkers === 1) {
-                    map.setView(bounds.getCenter(), 14);
-                } else {
-                    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-                }
-            }, 100);
-        }
-    }
-
-    function flyToEvent(eventId) {
-        const event = filteredEvents.find(e => e.id === eventId);
-        if (event && event.lat && event.lng && map) {
-            map.flyTo([event.lat, event.lng], 16, {
-                duration: 1.5
-            });
-        }
-    }
-
-    // --- CALENDAR LOGIC ---
     function renderCalendar() {
-        if (!DOM.calendarGrid || !DOM.monthYearDisplay) return;
-
-        DOM.calendarGrid.innerHTML = '';
-        
+        grid.innerHTML = '';
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         
-        // Set Header
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        DOM.monthYearDisplay.textContent = `${monthNames[month]} ${year}`;
+        monthYear.textContent = `${monthNames[month]} ${year}`;
 
-        // Calculations
-        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const daysInPrevMonth = new Date(year, month, 0).getDate();
-        
         const today = new Date();
         const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
         // Populate days
-        const totalCells = 42; // 6 rows of 7 days
-        for (let i = 0; i < totalCells; i++) {
-            const dayElement = document.createElement('div');
-            dayElement.className = 'ce-day';
+        for (let i = 0; i < 42; i++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'ohm-day';
 
-            let cellDate;
-
-            if (i < firstDayOfMonth) {
-                // Previous month days
-                const pDay = daysInPrevMonth - firstDayOfMonth + i + 1;
-                dayElement.textContent = pDay;
-                dayElement.classList.add('other-month', 'empty');
-            } else if (i >= firstDayOfMonth && i < firstDayOfMonth + daysInMonth) {
-                // Current month days
-                const dayNum = i - firstDayOfMonth + 1;
-                dayElement.textContent = dayNum;
+            if (i < firstDay) {
+                dayEl.textContent = daysInPrevMonth - firstDay + i + 1;
+                dayEl.classList.add('other-month');
+            } else if (i >= firstDay && i < firstDay + daysInMonth) {
+                const dayNum = i - firstDay + 1;
+                dayEl.textContent = dayNum;
+                dayEl.classList.add('active-month');
                 
-                cellDate = new Date(year, month, dayNum);
-                
-                // Check if today
                 if (isCurrentMonth && dayNum === today.getDate()) {
-                    dayElement.classList.add('today');
+                    dayEl.classList.add('today');
                 }
 
-                // Check if selected
-                if (selectedDate && 
-                    selectedDate.getDate() === dayNum && 
-                    selectedDate.getMonth() === month && 
-                    selectedDate.getFullYear() === year) {
-                    dayElement.classList.add('selected');
-                }
-
-                // Check if has events
-                const eventsOnDay = getEventsOnDate(cellDate);
-                if (eventsOnDay.length > 0) {
-                    dayElement.classList.add('has-events');
-                    const dot = document.createElement('div');
-                    dot.className = 'ce-event-dot';
-                    dayElement.appendChild(dot);
-                }
-
-                // Click handler
-                dayElement.addEventListener('click', () => {
-                    selectedDate = (selectedDate && isSameDate(selectedDate, cellDate)) ? null : cellDate;
+                // Check events
+                const cellDate = new Date(year, month, dayNum);
+                dayEl.dataset.date = `${year}-${month}-${dayNum}`;
+                const dayEvents = events.filter(e => 
+                    e.start_time.getFullYear() === year &&
+                    e.start_time.getMonth() === month &&
+                    e.start_time.getDate() === dayNum
+                );
+                
+                if (dayEvents.length > 0) {
+                    dayEl.classList.add('has-events');
                     
-                    // Auto-switch to "All" filter to respect calendar selection logic
-                    if (selectedDate) setFilter('all');
-                    
-                    renderCalendar(); // re-render to update selected styling
-                    applyFilters(); // apply filter changes based on selected date
-                });
-
+                    const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    dayEl.addEventListener('click', () => selectDay(dayEl, formatterDate.format(cellDate), dayEvents));
+                }
             } else {
-                // Next month days
-                const nDay = i - firstDayOfMonth - daysInMonth + 1;
-                dayElement.textContent = nDay;
-                dayElement.classList.add('other-month', 'empty');
+                dayEl.textContent = i - firstDay - daysInMonth + 1;
+                dayEl.classList.add('other-month');
             }
-
-            DOM.calendarGrid.appendChild(dayElement);
+            grid.appendChild(dayEl);
+        }
+        function selectUpcomingEvent() {
+        const now = new Date();
+        const upcomingEvents = [...events].filter(e => e.start_time >= now).sort((a,b) => a.start_time - b.start_time);
+        
+        if (upcomingEvents.length > 0) {
+            const nextEvent = upcomingEvents[0];
+            const dayEvents = events.filter(e => 
+                e.start_time.getFullYear() === nextEvent.start_time.getFullYear() &&
+                e.start_time.getMonth() === nextEvent.start_time.getMonth() &&
+                e.start_time.getDate() === nextEvent.start_time.getDate()
+            );
+            const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            selectDay(document.querySelector(`.ohm-day[data-date="${nextEvent.start_time.getFullYear()}-${nextEvent.start_time.getMonth()}-${nextEvent.start_time.getDate()}"]`), formatterDate.format(nextEvent.start_time), dayEvents);
+        } else {
+            if (events.length > 0) {
+                const firstEvent = [...events].sort((a,b) => a.start_time - b.start_time)[0];
+                const dayEvents = events.filter(e => 
+                    e.start_time.getFullYear() === firstEvent.start_time.getFullYear() &&
+                    e.start_time.getMonth() === firstEvent.start_time.getMonth() &&
+                    e.start_time.getDate() === firstEvent.start_time.getDate()
+                );
+                const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                selectDay(document.querySelector(`.ohm-day[data-date="${firstEvent.start_time.getFullYear()}-${firstEvent.start_time.getMonth()}-${firstEvent.start_time.getDate()}"]`), formatterDate.format(firstEvent.start_time), dayEvents);
+            } else {
+                selectDay(null, "Upcoming Events", []);
+                detailsContent.innerHTML = '<div class="ohm-empty-state">No events this month</div>';
+            }
         }
     }
+    selectUpcomingEvent();
+}
 
-    // --- FILTERING & EVENT LIST ---
-    function applyFilters() {
-        showLoadingState();
+    const detailsPanel = document.getElementById('ohm-calendar-details');
+    const detailsClose = document.getElementById('ohm-details-close');
+    
+    detailsClose.addEventListener('click', () => {
+        detailsPanel.classList.remove('active');
+    });
+    const detailsContent = document.getElementById('ohm-details-content');
+    const detailsTitle = document.getElementById('ohm-details-title');
 
-        const now = new Date();
-        // Reset time to start of day for comparisons
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        let q = searchQuery.toLowerCase().trim();
-
-        filteredEvents = events.filter(event => {
-            const evStart = new Date(event.start_time);
-            
-            // 1. Calendar Click Filter (Takes precedence over predefined filters if active)
-            if (selectedDate) {
-                 if (!isSameDate(evStart, selectedDate)) return false;
-            } else {
-                // 2. Predefined Filters
-                if (currentFilter === 'upcoming') {
-                    if (evStart < now) return false;
-                } else if (currentFilter === 'today') {
-                    if (!isSameDate(evStart, todayStart)) return false;
-                }
-            }
-
-            // 3. Search Filter
-            if (q) {
-                const titleMatch = event.title?.toLowerCase().includes(q);
-                const locMatch = event.location_name?.toLowerCase().includes(q);
-                const descMatch = event.description?.toLowerCase().includes(q);
-                const tagMatch = event.tag?.toLowerCase().includes(q);
-                
-                if (!titleMatch && !locMatch && !descMatch && !tagMatch) return false;
-            }
-
-            return true;
-        });
-
-        // Update UI Summary
-        updateListTitle();
-        renderEventList();
-        updateMapMarkers();
+    function selectDay(dayEl, title, dayEvents) {
+        document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+        if (dayEl) dayEl.classList.add('selected');
+        displayEvents(title, dayEvents);
     }
-
-    function renderEventList() {
-        DOM.eventsContainer.innerHTML = '';
-        DOM.eventCount.textContent = `${filteredEvents.length} event${filteredEvents.length === 1 ? '' : 's'}`;
-
-        if (filteredEvents.length === 0) {
-            DOM.eventsContainer.innerHTML = `
-                <div class="ce-state-message">
-                    <p>No events found for the current selection.</p>
-                </div>
-            `;
+    
+    function displayEvents(title, dayEvents) {
+        detailsPanel.classList.add('active');
+        detailsTitle.textContent = title;
+        detailsContent.innerHTML = '';
+        
+        if (!dayEvents || dayEvents.length === 0) {
+            detailsContent.innerHTML = '<div class="ohm-empty-state">No events found.</div>';
             return;
         }
 
-        filteredEvents.forEach(event => {
-            const card = document.createElement('div');
-            card.className = `ce-event-card ${activeEventId === event.id ? 'active' : ''}`;
-            card.id = `ce-event-${event.id}`;
+        const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formatterTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+        
+        dayEvents.forEach(event => {
+            const dateStr = formatterDate.format(event.start_time);
+            const startTimeStr = formatterTime.format(event.start_time);
+            let timeString = `${dateStr} • ${startTimeStr}`;
             
-            const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            const formatterTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-            
-            const dateStr = formatterDate.format(new Date(event.start_time));
-            const timeStr = formatterTime.format(new Date(event.start_time));
+            if (event.end_time) {
+                const endTimeStr = formatterTime.format(new Date(event.end_time));
+                timeString += ` - ${endTimeStr}`;
+            }
 
+            let locationString = event.location_name || '';
+            if (event.address) {
+                 locationString += locationString ? `<br><span style="color:#888; font-size:12px;">${event.address}</span>` : event.address;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'ohm-card';
             card.innerHTML = `
-                ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ce-event-img" loading="lazy">` : `<div class="ce-event-img"></div>`}
-                <div class="ce-event-content">
-                    ${event.tag ? `<div class="ce-event-tag">${event.tag}</div>` : ''}
-                    <h3 class="ce-event-card-title">${event.title}</h3>
-                    
-                    <div class="ce-event-meta">
+                ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ohm-card-img" loading="lazy">` : ''}
+                <div class="ohm-card-content">
+                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
+                    <h3 class="ohm-card-title">${event.title}</h3>
+                    <div class="ohm-card-meta">
                         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
-                        <span>${dateStr} at ${timeStr}</span>
+                        <div>${timeString}</div>
                     </div>
-                    
-                    ${event.location_name ? `
-                    <div class="ce-event-meta">
+                    ${locationString ? `
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        <span>${event.location_name}</span>
-                    </div>` : ''}
-                    
-                    ${event.description ? `<div class="ce-event-desc">${event.description}</div>` : ''}
+                        <div>${locationString}</div>
+                    </a>` : ''}
+                    ${event.description ? `<div class="ohm-card-desc">${event.description}</div>` : '<div style="flex-grow:1;"></div>'}
+                    ${event.ticket_url ? `
+                    <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
+                        Get Tickets
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </a>
+                    ` : ''}
                 </div>
             `;
-
-            card.addEventListener('click', () => {
-                highlightEvent(event.id);
-                flyToEvent(event.id);
-            });
-
-            DOM.eventsContainer.appendChild(card);
-        });
-    }
-
-    function setFilter(filterType) {
-        currentFilter = filterType;
-        
-        // Update styling
-        DOM.filterBtns.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === filterType);
-        });
-
-        // If clicking a predefined filter, clear calendar selection
-        if (filterType !== 'all') {
-             selectedDate = null;
-             renderCalendar();
-        }
-
-        applyFilters();
-    }
-
-    function updateListTitle() {
-        if (selectedDate) {
-            const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-            DOM.listTitle.textContent = `Events for ${formatter.format(selectedDate)}`;
-        } else if (searchQuery) {
-            DOM.listTitle.textContent = 'Search Results';
-        } else {
-            const titles = {
-                'upcoming': 'Upcoming Events',
-                'today': 'Today\'s Events',
-                'all': 'All Events'
-            };
-            DOM.listTitle.textContent = titles[currentFilter];
-        }
-    }
-
-    function highlightEvent(eventId) {
-        activeEventId = eventId;
-        
-        // Update list styles
-        document.querySelectorAll('.ce-event-card').forEach(card => card.classList.remove('active'));
-        const activeCard = document.getElementById(`ce-event-${eventId}`);
-        if (activeCard) activeCard.classList.add('active');
-
-        // Update map marker styles
-        updateMapMarkers(); // inefficient but works well for UI changes
-    }
-
-    function scrollToEvent(eventId) {
-        const card = document.getElementById(`ce-event-${eventId}`);
-        if (card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    // --- EVENT LISTENERS ---
-    function setupEventListeners() {
-        // Month Navigation
-        DOM.prevMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
+            detailsContent.appendChild(card);
         });
         
-        DOM.nextMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
-
-        // Filters
-        DOM.filterBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                setFilter(e.target.dataset.filter);
-            });
-        });
-
-        // Search (with basic debounce)
-        let debounceTimer;
-        DOM.searchInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                searchQuery = e.target.value;
-                applyFilters();
-            }, 300);
-        });
-    }
-
-    // --- UTILS & HELPERS ---
-    function getEventsOnDate(date) {
-        return events.filter(e => isSameDate(new Date(e.start_time), date));
-    }
-
-    function isSameDate(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
-    }
-
-    function showLoadingState() {
-        DOM.eventsContainer.innerHTML = `
-            <div class="ce-state-message" style="grid-column: 1 / -1;">
-                <div class="ce-loader"></div>
-                <p>Loading events...</p>
-            </div>
-        `;
-    }
-
-    function showErrorState() {
-        DOM.eventsContainer.innerHTML = `
-            <div class="ce-state-message">
-                <p>Failed to load events. Please try again later.</p>
-            </div>
-        `;
-    }
-
-    // Fallback data for testing aesthetic without real database
-    function getMockEvents() {
-        const now = new Date();
-        const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-        const nextWeek = new Date(now); nextWeek.setDate(now.getDate() + 7);
-        const nextMonth = new Date(now); nextMonth.setMonth(now.getMonth() + 1);
         
-        return [
-            {
-                id: '1', title: 'Techno Night: Volume 1', description: 'Deep dark techno event running until early morning.',
-                start_time: now, end_time: null,
-                location_name: 'Empire Underground', lat: 42.6526, lng: -73.7562,
-                image_url: 'https://images.unsplash.com/photo-1571266028243-cb40fce7573f?q=80&w=600&auto=format&fit=crop', tag: 'Music'
-            },
-            {
-                id: '2', title: 'DRUM & BASS: The Movement', description: 'Documentary screening & sets.',
-                start_time: tomorrow, end_time: null,
-                location_name: 'Alias Coffee', lat: 42.6644, lng: -73.7547,
-                image_url: 'https://images.unsplash.com/photo-1598387181032-a3103ea27146?q=80&w=600&auto=format&fit=crop', tag: 'Art / Music'
-            },
-            {
-                id: '3', title: 'Ambient Gallery Session', description: 'Immersive visual and sonic art experience.',
-                start_time: nextWeek, end_time: null,
-                location_name: 'Albany Barn', lat: 42.6622, lng: -73.7485,
-                image_url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop', tag: 'Exhibition'
-            },
-            {
-                id: '4', title: 'Future Bass Showcase', description: 'Local and regional talent.',
-                start_time: nextMonth, end_time: null,
-                location_name: 'Fuze Box', lat: 42.6565, lng: -73.7663,
-                image_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop', tag: 'Live Set'
-            }
-        ];
     }
 
-    // Start App
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    document.getElementById('ohm-prev').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        fetchEvents();
+    });
+    
+    document.getElementById('ohm-next').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        fetchEvents();
+    });
 
+    // Init
+    fetchEvents();
 })();
 </script>
-
-<!-- WEBFLOW EMBED ENDS HERE -->
-
-</body>
-</html>
+<!-- WEBFLOW EMBED: Calendar Widget Ends -->
