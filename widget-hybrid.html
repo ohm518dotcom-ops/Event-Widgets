@@ -952,7 +952,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 
                 // If it's in a map popup, we might need to update the popup position
                 if (btn.closest('.leaflet-popup-content')) {
-                    const popup = map._popup;
+                    const popup = leafletMap._popup;
                     if (popup) popup.update();
                 }
             }
@@ -960,8 +960,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
     });
 
     // Detect truncation in map popups
-    if (map) {
-        map.on('popupopen', (e) => {
+    if (leafletMap) {
+        leafletMap.on('popupopen', (e) => {
             const container = e.popup._container;
             const desc = container.querySelector('.ohm-card-desc');
             const btn = container.querySelector('.ohm-read-more');
