@@ -408,9 +408,13 @@ body { background-color: transparent; margin: 0; padding: 0; }
             <button class="ohm-submit-toggle-btn" id="ohm-submit-toggle">Submit an Event</button>
         </div>
         <div class="ohm-cards-filters">
+            <div class="ohm-filter-btns" id="ohm-view-toggles">
+                <button class="ohm-filter-btn active" data-view-mode="ohm">OHM Only</button>
+                <button class="ohm-filter-btn" data-view-mode="all">All Events</button>
+            </div>
             <div class="ohm-filter-btns">
                 <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
-                <button class="ohm-filter-btn" data-filter="all">All</button>
+                <button class="ohm-filter-btn" data-filter="all">Time: All</button>
                 <button class="ohm-filter-btn" id="ohm-calendar-toggle" data-filter="calendar_date" title="Pick a Date...">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
                 </button>
@@ -466,6 +470,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
     let allEvents = [];
     let currentFilter = 'upcoming'; 
+    let currentViewMode = 'ohm'; // 'ohm' or 'all'
     let searchQuery = '';
     let selectedDateFilter = null; // Stored as "YYYY-MM-DD"
     
@@ -615,6 +620,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 
                 // Check if this date has events
                 const hasEvent = allEvents.some(e => {
+                    if (e.status === 'pending') return false;
+                    if (currentViewMode === 'ohm' && e.email) return false;
                     return e._dateObj.getFullYear() === year && e._dateObj.getMonth() === month && e._dateObj.getDate() === dayNum;
                 });
                 
@@ -684,6 +691,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
     function updateFilterButtonsUI() {
         filterBtns.forEach(btn => {
+            if (btn.hasAttribute('data-view-mode')) {
+                if (btn.getAttribute('data-view-mode') === currentViewMode) btn.classList.add('active');
+                else btn.classList.remove('active');
+                return;
+            }
             if (btn.id === 'ohm-calendar-toggle') {
                 if (currentFilter === 'calendar_date') btn.classList.add('active');
                 else btn.classList.remove('active');
@@ -697,10 +709,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
             }
         });
         
-        if (currentFilter === 'upcoming') titleEl.textContent = "Upcoming Events";
-        if (currentFilter === 'today') titleEl.textContent = "Today's Events";
-        if (currentFilter === 'all') titleEl.textContent = "All Events";
-        if (currentFilter === 'map') titleEl.textContent = "Map View";
+        let prefix = currentViewMode === 'ohm' ? "OHM " : "All ";
+        if (currentFilter === 'upcoming') titleEl.textContent = prefix + "Upcoming Events";
+        if (currentFilter === 'today') titleEl.textContent = prefix + "Today's Events";
+        if (currentFilter === 'all') titleEl.textContent = prefix + "Events";
+        if (currentFilter === 'map') titleEl.textContent = prefix + "Map View";
         
         const archiveWrapper = document.getElementById('ohm-archive-toggle-wrapper');
         if (archiveWrapper) {
@@ -720,17 +733,22 @@ body { background-color: transparent; margin: 0; padding: 0; }
     }
 
     filterBtns.forEach(btn => {
-        if (btn.id === 'ohm-calendar-toggle' || btn.id === 'ohm-map-toggle') return;
-        btn.addEventListener('click', () => {
-            currentFilter = btn.getAttribute('data-filter');
-            selectedDateFilter = null; // Clear calendar selection
+            if (btn.id === 'ohm-calendar-toggle' || btn.id === 'ohm-map-toggle') return;
             
-            document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
-            
-            updateFilterButtonsUI();
-            applyFilters();
+            btn.addEventListener('click', () => {
+                if (btn.hasAttribute('data-view-mode')) {
+                    currentViewMode = btn.getAttribute('data-view-mode');
+                    renderCalendar(); // Update calendar dots to reflect new view
+                } else {
+                    currentFilter = btn.getAttribute('data-filter');
+                    selectedDateFilter = null; // Clear calendar selection
+                    document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+                }
+                
+                updateFilterButtonsUI();
+                applyFilters();
+            });
         });
-    });
 
     if (mapToggleBtn) {
         mapToggleBtn.addEventListener('click', () => {
@@ -759,7 +777,15 @@ body { background-color: transparent; margin: 0; padding: 0; }
     }
 
     function applyFilters() {
-        let filtered = allEvents;
+        // Base filter: must not be pending
+        let filtered = allEvents.filter(e => e.status !== 'pending');
+
+        // View Mode Filter: OHM only vs All
+        if (currentViewMode === 'ohm') {
+            // "OHM Events" = events created without an email (internal admin creation)
+            filtered = filtered.filter(e => !e.email);
+        }
+
         const now = new Date();
         const archiveCheckbox = document.getElementById('ohm-archive-checkbox');
         
