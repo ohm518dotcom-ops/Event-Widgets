@@ -1334,21 +1334,42 @@
                         </div>
                     </div>
 
-                    <!-- Widget Card: Hybrid -->
+                    <!-- Widget Card: Hybrid (OHM Only) -->
                     <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                             </div>
-                            <div style="font-weight: 600;">Hybrid Layout</div>
+                            <div style="font-weight: 600;">Hybrid Layout (OHM Only)</div>
                         </div>
-                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A unified layout featuring the calendar next to dynamically filtering cards.</p>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A unified layout featuring the calendar next to dynamically filtering cards. Displays only internal OHM events.</p>
                         <div style="display: flex; gap: 8px;">
                             <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('hybrid')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                 Preview
                             </button>
-                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('hybrid')">
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('hybrid-ohm')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Widget Card: Hybrid (All Events) -->
+                    <div class="stat-card" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--glass-bg); padding: 8px; border-radius: 8px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            </div>
+                            <div style="font-weight: 600;">Hybrid Layout (All Events)</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); flex-grow: 1;">A unified layout featuring the calendar next to dynamically filtering cards. Displays internal AND approved community events.</p>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-btn" style="flex: 1; justify-content: center; background: var(--glass-bg); color: #fff; border: 1px solid var(--border-subtle);" onclick="previewWidget('hybrid')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Preview
+                            </button>
+                            <button class="add-btn" style="flex: 1; justify-content: center;" onclick="copyWidgetCode('hybrid-all')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 Copy Code
                             </button>
@@ -2273,7 +2294,15 @@
 
         window.copyWidgetCode = async function(type) {
             const deployedUrl = 'https://ohm518dotcom-ops.github.io/Event-Widgets';
-            const code = `<!-- OHM ${type.charAt(0).toUpperCase() + type.slice(1)} Widget -->\n<div data-ohm-widget="${type}"></div>\n<script src="${deployedUrl}/loader.js" async><\/script>`;
+            let code = '';
+            
+            if (type === 'hybrid-ohm') {
+                code = `<!-- OHM Hybrid Widget (OHM Only) -->\n<div data-ohm-widget="hybrid" data-view-mode="ohm"></div>\n<script src="${deployedUrl}/loader.js" async><\/script>`;
+            } else if (type === 'hybrid-all') {
+                code = `<!-- OHM Hybrid Widget (All Events) -->\n<div data-ohm-widget="hybrid" data-view-mode="all"></div>\n<script src="${deployedUrl}/loader.js" async><\/script>`;
+            } else {
+                code = `<!-- OHM ${type.charAt(0).toUpperCase() + type.slice(1)} Widget -->\n<div data-ohm-widget="${type}"></div>\n<script src="${deployedUrl}/loader.js" async><\/script>`;
+            }
 
             navigator.clipboard.writeText(code).then(() => {
                 showToast('Async embed code copied!');
