@@ -472,8 +472,14 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const grid = document.getElementById('ohm-grid');
     const monthYear = document.getElementById('ohm-month-year');
     
+    // Read the view mode from the container's data attribute, defaulting to 'all'
+    const layoutEl = document.getElementById('ohm-calendar-layout');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
+
     let currentDate = new Date();
     let events = [];
+    let isInitialLoad = true;
 
     async function fetchEvents() {
         container.classList.add('loading');
@@ -516,7 +522,27 @@ body { background-color: transparent; margin: 0; padding: 0; }
             });
             if(response.ok) {
                 const data = await response.json();
-                events = data.map(e => ({ ...e, start_time: new Date(e.start_time) }));
+                let fetched = data.map(e => ({ ...e, start_time: new Date(e.start_time) }));
+                
+                // Filter non-pending
+                fetched = fetched.filter(e => e.status !== 'pending');
+                
+                // Apply View Mode Filtering
+                if (currentViewMode === 'ohm') {
+                    fetched = fetched.filter(e => !e.email);
+                }
+                
+                events = fetched;
+            }
+            
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                if (events.length === 0) {
+                    if (containerEl) containerEl.style.display = 'none';
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = '';
+                }
             }
         } catch(e) { 
             console.error("Calendar Widget err:", e); 
@@ -1022,8 +1048,14 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const grid = document.getElementById(&#039;ohm-grid&#039;);
     const monthYear = document.getElementById(&#039;ohm-month-year&#039;);
     
+    // Read the view mode from the container&#039;s data attribute, defaulting to &#039;all&#039;
+    const layoutEl = document.getElementById(&#039;ohm-calendar-layout&#039;);
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl &amp;&amp; containerEl.getAttribute(&#039;data-view-mode&#039;)) ? containerEl.getAttribute(&#039;data-view-mode&#039;) : &#039;all&#039;;
+
     let currentDate = new Date();
     let events = [];
+    let isInitialLoad = true;
 
     async function fetchEvents() {
         container.classList.add(&#039;loading&#039;);
@@ -1066,7 +1098,27 @@ body { background-color: transparent; margin: 0; padding: 0; }
             });
             if(response.ok) {
                 const data = await response.json();
-                events = data.map(e =&gt; ({ ...e, start_time: new Date(e.start_time) }));
+                let fetched = data.map(e =&gt; ({ ...e, start_time: new Date(e.start_time) }));
+                
+                // Filter non-pending
+                fetched = fetched.filter(e =&gt; e.status !== &#039;pending&#039;);
+                
+                // Apply View Mode Filtering
+                if (currentViewMode === &#039;ohm&#039;) {
+                    fetched = fetched.filter(e =&gt; !e.email);
+                }
+                
+                events = fetched;
+            }
+            
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                if (events.length === 0) {
+                    if (containerEl) containerEl.style.display = &#039;none&#039;;
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = &#039;&#039;;
+                }
             }
         } catch(e) { 
             console.error(&quot;Calendar Widget err:&quot;, e); 
@@ -1378,7 +1430,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-ticket-btn:hover { background-color: #000; color: #fff; border-color: #fff; }
 </style>
 
-<div class="ohm-map-widget">
+<div class="ohm-map-widget" id="ohm-map-widget-layout">
     <div id="ohm-map-container"></div>
 </div>
 
@@ -1390,6 +1442,11 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
     const USE_REAL_SUPABASE = true; 
+
+    // Read the view mode from the container's data attribute, defaulting to 'all'
+    const layoutEl = document.getElementById('ohm-map-widget-layout');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
 
     let map = null;
 
@@ -1437,8 +1494,27 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&lat=not.is.null&lng=not.is.null`, {
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
                 });
-                if(response.ok) events = await response.json();
+                if(response.ok) {
+                    let fetched = await response.json();
+                    
+                    // Filter non-pending
+                    fetched = fetched.filter(e => e.status !== 'pending');
+                    
+                    // View Mode filter
+                    if (currentViewMode === 'ohm') {
+                        fetched = fetched.filter(e => !e.email);
+                    }
+                    
+                    events = fetched;
+                }
             } catch(e) { console.error("Map Widget err:", e); }
+        }
+
+        if (events.length === 0) {
+            if (containerEl) containerEl.style.display = 'none';
+            return;
+        } else {
+            if (containerEl) containerEl.style.display = '';
         }
 
         renderMarkers(events);
@@ -1631,7 +1707,7 @@ body { background-color: #060606; margin: 0; padding: 24px; }
 .ohm-ticket-btn:hover { background-color: #000; color: #fff; border-color: #fff; }
 &lt;/style&gt;
 
-&lt;div class=&quot;ohm-map-widget&quot;&gt;
+&lt;div class=&quot;ohm-map-widget&quot; id=&quot;ohm-map-widget-layout&quot;&gt;
     &lt;div id=&quot;ohm-map-container&quot;&gt;&lt;/div&gt;
 &lt;/div&gt;
 
@@ -1643,6 +1719,11 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     const SUPABASE_URL = &#039;https://pcutqzebmgiorfrajgcl.supabase.co&#039;;
     const SUPABASE_ANON_KEY = &#039;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k&#039;;
     const USE_REAL_SUPABASE = true; 
+
+    // Read the view mode from the container&#039;s data attribute, defaulting to &#039;all&#039;
+    const layoutEl = document.getElementById(&#039;ohm-map-widget-layout&#039;);
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl &amp;&amp; containerEl.getAttribute(&#039;data-view-mode&#039;)) ? containerEl.getAttribute(&#039;data-view-mode&#039;) : &#039;all&#039;;
 
     let map = null;
 
@@ -1690,8 +1771,27 @@ body { background-color: #060606; margin: 0; padding: 24px; }
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&amp;lat=not.is.null&amp;lng=not.is.null`, {
                     headers: { &#039;apikey&#039;: SUPABASE_ANON_KEY, &#039;Authorization&#039;: `Bearer ${SUPABASE_ANON_KEY}` }
                 });
-                if(response.ok) events = await response.json();
+                if(response.ok) {
+                    let fetched = await response.json();
+                    
+                    // Filter non-pending
+                    fetched = fetched.filter(e =&gt; e.status !== &#039;pending&#039;);
+                    
+                    // View Mode filter
+                    if (currentViewMode === &#039;ohm&#039;) {
+                        fetched = fetched.filter(e =&gt; !e.email);
+                    }
+                    
+                    events = fetched;
+                }
             } catch(e) { console.error(&quot;Map Widget err:&quot;, e); }
+        }
+
+        if (events.length === 0) {
+            if (containerEl) containerEl.style.display = &#039;none&#039;;
+            return;
+        } else {
+            if (containerEl) containerEl.style.display = &#039;&#039;;
         }
 
         renderMarkers(events);
@@ -1857,6 +1957,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
     const grid = document.getElementById('ohm-cards-grid');
 
+    // Read the view mode from the container's data attribute, defaulting to 'all'
+    const layoutEl = document.getElementById('ohm-cards-container');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
+
     let allEvents = [];
 
     async function fetchEvents() {
@@ -1881,13 +1986,31 @@ body { background-color: transparent; margin: 0; padding: 0; }
         }
 
         try {
-            // Fetch exactly 3 upcoming events
+            // Fetch upcoming events
             const now = new Date().toISOString();
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=3`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=10`, {
                 headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
             });
             if(response.ok) {
-                allEvents = await response.json();
+                let fetched = await response.json();
+                
+                // Filter non-pending
+                fetched = fetched.filter(e => e.status !== 'pending');
+                
+                // View Mode filter
+                if (currentViewMode === 'ohm') {
+                    fetched = fetched.filter(e => !e.email);
+                }
+                
+                allEvents = fetched.slice(0, 3);
+                
+                if (allEvents.length === 0) {
+                    if (containerEl) containerEl.style.display = 'none';
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = '';
+                }
+                
                 renderCards(allEvents);
             } else {
                 throw new Error("Failed to fetch");
@@ -2022,6 +2145,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
     const grid = document.getElementById(&#039;ohm-cards-grid&#039;);
 
+    // Read the view mode from the container&#039;s data attribute, defaulting to &#039;all&#039;
+    const layoutEl = document.getElementById(&#039;ohm-cards-container&#039;);
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl &amp;&amp; containerEl.getAttribute(&#039;data-view-mode&#039;)) ? containerEl.getAttribute(&#039;data-view-mode&#039;) : &#039;all&#039;;
+
     let allEvents = [];
 
     async function fetchEvents() {
@@ -2046,13 +2174,31 @@ body { background-color: transparent; margin: 0; padding: 0; }
         }
 
         try {
-            // Fetch exactly 3 upcoming events
+            // Fetch upcoming events
             const now = new Date().toISOString();
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&amp;start_time=gte.${now}&amp;order=start_time.asc&amp;limit=3`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&amp;start_time=gte.${now}&amp;order=start_time.asc&amp;limit=10`, {
                 headers: { &#039;apikey&#039;: SUPABASE_ANON_KEY, &#039;Authorization&#039;: `Bearer ${SUPABASE_ANON_KEY}` }
             });
             if(response.ok) {
-                allEvents = await response.json();
+                let fetched = await response.json();
+                
+                // Filter non-pending
+                fetched = fetched.filter(e =&gt; e.status !== &#039;pending&#039;);
+                
+                // View Mode filter
+                if (currentViewMode === &#039;ohm&#039;) {
+                    fetched = fetched.filter(e =&gt; !e.email);
+                }
+                
+                allEvents = fetched.slice(0, 3);
+                
+                if (allEvents.length === 0) {
+                    if (containerEl) containerEl.style.display = &#039;none&#039;;
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = &#039;&#039;;
+                }
+                
                 renderCards(allEvents);
             } else {
                 throw new Error(&quot;Failed to fetch&quot;);

@@ -72,6 +72,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
     const grid = document.getElementById('ohm-cards-grid');
 
+    // Read the view mode from the container's data attribute, defaulting to 'all'
+    const layoutEl = document.getElementById('ohm-cards-container');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
+
     let allEvents = [];
 
     async function fetchEvents() {
@@ -96,13 +101,31 @@ body { background-color: transparent; margin: 0; padding: 0; }
         }
 
         try {
-            // Fetch exactly 3 upcoming events
+            // Fetch upcoming events
             const now = new Date().toISOString();
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=3`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=10`, {
                 headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
             });
             if(response.ok) {
-                allEvents = await response.json();
+                let fetched = await response.json();
+                
+                // Filter non-pending
+                fetched = fetched.filter(e => e.status !== 'pending');
+                
+                // View Mode filter
+                if (currentViewMode === 'ohm') {
+                    fetched = fetched.filter(e => !e.email);
+                }
+                
+                allEvents = fetched.slice(0, 3);
+                
+                if (allEvents.length === 0) {
+                    if (containerEl) containerEl.style.display = 'none';
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = '';
+                }
+                
                 renderCards(allEvents);
             } else {
                 throw new Error("Failed to fetch");

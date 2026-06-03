@@ -269,8 +269,14 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const grid = document.getElementById('ohm-grid');
     const monthYear = document.getElementById('ohm-month-year');
     
+    // Read the view mode from the container's data attribute, defaulting to 'all'
+    const layoutEl = document.getElementById('ohm-calendar-layout');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
+
     let currentDate = new Date();
     let events = [];
+    let isInitialLoad = true;
 
     async function fetchEvents() {
         container.classList.add('loading');
@@ -313,7 +319,27 @@ body { background-color: transparent; margin: 0; padding: 0; }
             });
             if(response.ok) {
                 const data = await response.json();
-                events = data.map(e => ({ ...e, start_time: new Date(e.start_time) }));
+                let fetched = data.map(e => ({ ...e, start_time: new Date(e.start_time) }));
+                
+                // Filter non-pending
+                fetched = fetched.filter(e => e.status !== 'pending');
+                
+                // Apply View Mode Filtering
+                if (currentViewMode === 'ohm') {
+                    fetched = fetched.filter(e => !e.email);
+                }
+                
+                events = fetched;
+            }
+            
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                if (events.length === 0) {
+                    if (containerEl) containerEl.style.display = 'none';
+                    return;
+                } else {
+                    if (containerEl) containerEl.style.display = '';
+                }
             }
         } catch(e) { 
             console.error("Calendar Widget err:", e); 
