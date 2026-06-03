@@ -194,8 +194,32 @@ body { background-color: transparent; margin: 0; padding: 0; }
     transition: var(--transition); border: 1px solid transparent; width: 100%;
 }
 .ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
 </style>
 
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://ohm518.com/donate" target="_blank">Donate here.</a>
+</div>
 <div class="ohm-calendar-layout" id="ohm-calendar-layout">
     <div class="ohm-calendar-widget" id="ohm-calendar">
     <div class="ohm-calendar-header">
@@ -438,7 +462,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         <div>${timeString}</div>
                     </div>
                     ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}

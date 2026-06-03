@@ -1495,6 +1495,10 @@
                         <label for="ticket_url">Ticket URL</label>
                         <input type="url" id="ticket_url" placeholder="https://eventbrite.com/...">
                     </div>
+                    <div class="form-group full-width" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                        <input type="checkbox" id="on_main_page" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--text-primary);" checked>
+                        <label for="on_main_page" style="margin: 0; cursor: pointer; font-weight: 500;">Show on main OHM page</label>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancel-modal">Cancel</button>
@@ -1735,11 +1739,14 @@
                         <td data-label="Event">
                             <div style="font-weight: 600;">${event.title}</div>
                             <div class="event-meta">${event.description ? event.description.substring(0, 40) + '...' : ''}</div>
+                            <div class="event-meta" style="margin-top: 4px; opacity: 0.85; font-size: 11px;">
+                                ${event.email === 'internal-calendar-only@ohm.com' ? '<span style="color:#aaa;">Admin (Calendar Only)</span>' : (!event.email ? '<span style="color:#00ff88;">Admin (Main Page)</span>' : `Submitted by: ${event.email}`)}
+                            </div>
                         </td>
                         <td data-label="Category"><span class="tag-pill">${event.tag || 'Music'}</span></td>
                         <td data-label="Date & Time"><div>${dateStr}</div><div class="event-meta">${timeStr}</div></td>
                         <td data-label="Location">
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" style="color: inherit; text-decoration: underline;">
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" style="color: inherit; text-decoration: underline;">
                                 <div>${event.location_name || 'Unknown'}</div>
                                 <div class="event-meta">${event.address ? event.address.split(',')[0] : ''}</div>
                             </a>
@@ -1774,7 +1781,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                                 ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </div>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="card-meta" style="text-decoration: underline; color: inherit;">
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="card-meta" style="text-decoration: underline; color: inherit;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                 ${event.location_name || 'Unknown'}
                             </a>
@@ -1855,7 +1862,7 @@
                         <div class="ohm-card-content">
                             <div class="ohm-card-tag">${event.tag || 'Music'}</div>
                             <div class="ohm-card-title">${event.title}</div>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                                 <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                                 ${event.location_name || 'Unknown Venue'}
                             </a>
@@ -1901,7 +1908,7 @@
                         ${locationEvents.map(event => `
                             <div style="margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 10px;">
                                 <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">${event.title}</div>
-                                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" style="font-size: 11px; color: #888; margin-bottom: 6px; text-decoration: underline; display: block; border-bottom: 1px dashed transparent;" onmouseover="this.style.borderBottomColor='#888'" onmouseout="this.style.borderBottomColor='transparent'">${event.location_name}</a>
+                                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" style="font-size: 11px; color: #888; margin-bottom: 6px; text-decoration: underline; display: block; border-bottom: 1px dashed transparent;" onmouseover="this.style.borderBottomColor='#888'" onmouseout="this.style.borderBottomColor='transparent'">${event.location_name}</a>
                                 <div style="display: flex; gap: 5px;">
                                     <button onclick="editEvent('${event.id}')" style="background: #fff; color: #000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">Edit</button>
                                     <button onclick="deleteEvent('${event.id}')" style="background: rgba(255,255,255,0.1); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;">Delete</button>
@@ -1940,7 +1947,8 @@
                     <tr data-id="${event.id}">
                         <td data-label="Event">
                             <div style="font-weight: 600;">${event.title}</div>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="event-meta" style="text-decoration: underline; color: inherit; display: block;">${event.location_name || 'No location'}</a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="event-meta" style="text-decoration: underline; color: inherit; display: block;">${event.location_name || 'No location'}</a>
+                            <div class="event-meta" style="margin-top: 4px; font-size: 11px;">Submitted by: ${event.email || 'Unknown'}</div>
                         </td>
                         <td data-label="Category"><span class="tag-pill">${event.tag || 'Music'}</span></td>
                         <td data-label="Date & Time">
@@ -2015,6 +2023,19 @@
             const startDt = new Date(`${startDate}T${startTime}:00`);
             const endDt = (endDate && endTime) ? new Date(`${endDate}T${endTime}:00`) : null;
 
+            const onMainPage = document.getElementById('on_main_page').checked;
+            const existingEmail = id ? allEvents.find(e => e.id === id)?.email : null;
+            let finalEmail = null;
+            if (onMainPage) {
+                finalEmail = null;
+            } else {
+                if (existingEmail && existingEmail !== 'internal-calendar-only@ohm.com') {
+                    finalEmail = existingEmail;
+                } else {
+                    finalEmail = 'internal-calendar-only@ohm.com';
+                }
+            }
+
             const eventData = {
                 title: document.getElementById('title').value,
                 tag: document.getElementById('tag').value,
@@ -2027,6 +2048,7 @@
                 lat: document.getElementById('lat').value ? parseFloat(document.getElementById('lat').value) : null,
                 lng: document.getElementById('lng').value ? parseFloat(document.getElementById('lng').value) : null,
                 ticket_url: document.getElementById('ticket_url').value,
+                email: finalEmail,
             };
 
             let error;
@@ -2073,6 +2095,7 @@
             document.getElementById('lat').value = event.lat || '';
             document.getElementById('lng').value = event.lng || '';
             document.getElementById('ticket_url').value = event.ticket_url || '';
+            document.getElementById('on_main_page').checked = !event.email;
 
             // Split date and time
             if (event.start_time) {
@@ -2182,6 +2205,8 @@
                 document.getElementById('start_time_select').value = "19:00";
                 document.getElementById('end_date').value = defaultEnd.toISOString().split('T')[0];
                 document.getElementById('end_time_select').value = "21:00";
+                // Default new events to NOT show on the main page (calendar only)
+                document.getElementById('on_main_page').checked = false;
             }
             eventModal.style.display = 'flex';
         }
@@ -2201,6 +2226,7 @@
             // Reset selects to defaults
             document.getElementById('start_time_select').value = "19:00";
             document.getElementById('end_time_select').value = "";
+            document.getElementById('on_main_page').checked = false;
         }
 
         function showToast(msg) {

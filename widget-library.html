@@ -371,13 +371,25 @@ body { background-color: transparent; margin: 0; padding: 0; }
     transition: var(--transition);
 }
 .ohm-card:hover { border-color: var(--border-hover); }
-.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
+.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #0d0d0d; border-bottom: 1px solid var(--border-color); }
 .ohm-card-content { padding: 16px; display: flex; flex-direction: column; }
 .ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
 .ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
 .ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
 .ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
-.ohm-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ohm-card-desc {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 10px; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+}
+.ohm-card-desc.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+.ohm-read-more {
+    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
+    margin-bottom: 14px; opacity: 0.8; transition: opacity 0.2s; display: none;
+}
+.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
 .ohm-ticket-btn {
     display: inline-flex; justify-content: center; align-items: center; gap: 8px;
     background-color: var(--text-primary); color: #000; padding: 9px 14px;
@@ -385,8 +397,32 @@ body { background-color: transparent; margin: 0; padding: 0; }
     transition: var(--transition); border: 1px solid transparent; width: 100%;
 }
 .ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
 </style>
 
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://ohm518.com/donate" target="_blank">Donate here.</a>
+</div>
 <div class="ohm-calendar-layout" id="ohm-calendar-layout">
     <div class="ohm-calendar-widget" id="ohm-calendar">
     <div class="ohm-calendar-header">
@@ -629,11 +665,14 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         <div>${timeString}</div>
                     </div>
                     ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}
-                    ${event.description ? `<div class="ohm-card-desc">${event.description}</div>` : '<div style="flex-grow:1;"></div>'}
+                    ${event.description ? `
+                        <div class="ohm-card-desc">${event.description}</div>
+                        <div class="ohm-read-more">Read More</div>
+                    ` : '<div style="flex-grow:1;"></div>'}
                     ${event.ticket_url ? `
                     <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
                         Get Tickets
@@ -647,6 +686,30 @@ body { background-color: transparent; margin: 0; padding: 0; }
         
         
     }
+
+    // Toggle Read More
+    detailsContent.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ohm-read-more')) {
+            const btn = e.target;
+            const desc = btn.previousElementSibling;
+            const isExpanded = desc.classList.toggle('expanded');
+            btn.textContent = isExpanded ? 'Read Less' : 'Read More';
+        }
+    });
+
+    // Detect truncation in details
+    const observer = new MutationObserver(() => {
+        detailsContent.querySelectorAll('.ohm-card').forEach(card => {
+            const desc = card.querySelector('.ohm-card-desc');
+            const btn = card.querySelector('.ohm-read-more');
+            if (desc && btn && btn.style.display !== 'block') {
+                if (desc.scrollHeight > desc.clientHeight) {
+                    btn.style.display = 'block';
+                }
+            }
+        });
+    });
+    observer.observe(detailsContent, { childList: true });
 
     document.getElementById('ohm-prev').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
@@ -858,7 +921,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     transition: var(--transition);
 }
 .ohm-card:hover { border-color: var(--border-hover); }
-.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
+.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #0d0d0d; border-bottom: 1px solid var(--border-color); }
 .ohm-card-content { padding: 16px; display: flex; flex-direction: column; }
 .ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
 .ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
@@ -884,8 +947,32 @@ body { background-color: transparent; margin: 0; padding: 0; }
     transition: var(--transition); border: 1px solid transparent; width: 100%;
 }
 .ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 16px;
+    font-family: &#039;Inter&#039;, sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
 &lt;/style&gt;
 
+&lt;div class=&quot;ohm-donate-callout&quot;&gt;
+    Support the work of OHM. &lt;a href=&quot;https://ohm518.com/donate&quot; target=&quot;_blank&quot;&gt;Donate here.&lt;/a&gt;
+&lt;/div&gt;
 &lt;div class=&quot;ohm-calendar-layout&quot; id=&quot;ohm-calendar-layout&quot;&gt;
     &lt;div class=&quot;ohm-calendar-widget&quot; id=&quot;ohm-calendar&quot;&gt;
     &lt;div class=&quot;ohm-calendar-header&quot;&gt;
@@ -1128,10 +1215,10 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         &lt;div&gt;${timeString}&lt;/div&gt;
                     &lt;/div&gt;
                     ${locationString ? `
-                    &lt;div class=&quot;ohm-card-meta&quot;&gt;
+                    &lt;a href=&quot;https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent((event.lat &amp;&amp; event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}&quot; target=&quot;_blank&quot; class=&quot;ohm-card-meta&quot; style=&quot;text-decoration: underline; color: inherit;&quot;&gt;
                         &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z&quot;/&gt;&lt;/svg&gt;
                         &lt;div&gt;${locationString}&lt;/div&gt;
-                    &lt;/div&gt;` : &#039;&#039;}
+                    &lt;/a&gt;` : &#039;&#039;}
                     ${event.description ? `
                         &lt;div class=&quot;ohm-card-desc&quot;&gt;${event.description}&lt;/div&gt;
                         &lt;div class=&quot;ohm-read-more&quot;&gt;Read More&lt;/div&gt;
@@ -1206,7 +1293,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 <!-- WEBFLOW EMBED: Map Widget Starts -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
-body { background-color: transparent; margin: 0; padding: 0; }
+body { background-color: #060606; margin: 0; padding: 24px; }
 /* Vibe & Variables */
 .ohm-map-widget {
     --bg-color: #0f0f0f;
@@ -1275,25 +1362,13 @@ body { background-color: transparent; margin: 0; padding: 0; }
     border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; color: #fff;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
-.ohm-card-img { width: 100%; height: 140px; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
+.ohm-card-img { width: 100%; height: 140px; object-fit: cover; background-color: #161616; border-bottom: 1px solid var(--border-color); }
 .ohm-card-content { padding: 16px; display: flex; flex-direction: column; }
 .ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.6); margin-bottom: 6px; font-weight: 500; }
 .ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: #fff; margin-top: 0; }
 .ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; line-height: 1.4;}
 .ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
-.ohm-card-desc {
-    font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; margin-top: 10px; margin-bottom: 8px;
-    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-.ohm-card-desc.expanded {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-}
-.ohm-read-more {
-    color: #fff; cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
-    margin-bottom: 14px; opacity: 0.8; transition: opacity 0.2s; display: none;
-}
-.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
+.ohm-card-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; margin-top: 10px; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ohm-ticket-btn {
     display: inline-flex; justify-content: center; align-items: center; gap: 8px; box-sizing: border-box;
     background-color: #fff; color: #000; padding: 9px 14px;
@@ -1409,7 +1484,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         <div>${timeString}</div>
                     </div>` : ''}
                     ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}
@@ -1471,7 +1546,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 <pre class="code-snippet" id="map-code" style="border:none; border-radius:0;">&lt;!-- WEBFLOW EMBED: Map Widget Starts --&gt;
 &lt;link rel=&quot;stylesheet&quot; href=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.css&quot; integrity=&quot;sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=&quot; crossorigin=&quot;&quot; /&gt;
 &lt;style&gt;
-body { background-color: transparent; margin: 0; padding: 0; }
+body { background-color: #060606; margin: 0; padding: 24px; }
 /* Vibe &amp; Variables */
 .ohm-map-widget {
     --bg-color: #0f0f0f;
@@ -1540,7 +1615,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; color: #fff;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
-.ohm-card-img { width: 100%; height: 140px; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
+.ohm-card-img { width: 100%; height: 140px; object-fit: cover; background-color: #161616; border-bottom: 1px solid var(--border-color); }
 .ohm-card-content { padding: 16px; display: flex; flex-direction: column; }
 .ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.6); margin-bottom: 6px; font-weight: 500; }
 .ohm-card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: #fff; margin-top: 0; }
@@ -1662,14 +1737,11 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         &lt;div&gt;${timeString}&lt;/div&gt;
                     &lt;/div&gt;` : &#039;&#039;}
                     ${locationString ? `
-                    &lt;div class=&quot;ohm-card-meta&quot;&gt;
+                    &lt;a href=&quot;https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent((event.lat &amp;&amp; event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}&quot; target=&quot;_blank&quot; class=&quot;ohm-card-meta&quot; style=&quot;text-decoration: underline; color: inherit;&quot;&gt;
                         &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z&quot;/&gt;&lt;/svg&gt;
                         &lt;div&gt;${locationString}&lt;/div&gt;
-                    &lt;/div&gt;` : &#039;&#039;}
-                    ${event.description ? `
-                        &lt;div class=&quot;ohm-card-desc&quot;&gt;${event.description}&lt;/div&gt;
-                        &lt;div class=&quot;ohm-read-more&quot;&gt;Read More&lt;/div&gt;
-                    ` : &#039;&lt;div style=&quot;flex-grow:1;&quot;&gt;&lt;/div&gt;&#039;}
+                    &lt;/a&gt;` : &#039;&#039;}
+                    ${event.description ? `&lt;div class=&quot;ohm-card-desc&quot;&gt;${event.description}&lt;/div&gt;` : &#039;&lt;div style=&quot;flex-grow:1;&quot;&gt;&lt;/div&gt;&#039;}
                     ${event.ticket_url ? `
                     &lt;a href=&quot;${event.ticket_url}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot; class=&quot;ohm-ticket-btn&quot;&gt;
                         Get Tickets
@@ -1738,15 +1810,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
 .ohm-cards-widget * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.ohm-cards-header {
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;
-}
-.ohm-cards-title { font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
-.ohm-cards-count { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
-
 .ohm-cards-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
 }
 
 @media (max-width: 600px) {
@@ -1754,76 +1819,22 @@ body { background-color: transparent; margin: 0; padding: 0; }
 }
 
 .ohm-card {
-    background-color: var(--surface-color); border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
-    transition: var(--transition); height: 100%;
+    background-color: transparent; border: none;
+    border-radius: 0; overflow: hidden; display: block;
+    transition: var(--transition); height: 100%; text-decoration: none;
 }
-.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
+.ohm-card:hover { transform: translateY(-4px); }
 
-.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
-
-.ohm-card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
-
-.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
-
-.ohm-card-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
-
-.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
-.ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
-
-.ohm-card-desc {
-    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 8px;
-    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+.ohm-card-img { 
+    width: 100%; aspect-ratio: 2 / 3; object-fit: contain; object-position: center;
+    background-color: transparent; display: block; transition: var(--transition);
 }
-.ohm-card-desc.expanded {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-}
-.ohm-read-more {
-    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
-    margin-bottom: 16px; opacity: 0.8; transition: opacity 0.2s; display: none;
-}
-.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
-
-.ohm-ticket-btn {
-    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
-    background-color: var(--text-primary); color: #000; padding: 10px 16px;
-    border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 600;
-    transition: var(--transition); border: 1px solid transparent; width: 100%;
-}
-.ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
-
-/* Filters & Search */
-.ohm-cards-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
-.ohm-filter-btns {
-    display: flex; gap: 4px; background: var(--surface-color); padding: 4px;
-    border-radius: var(--radius-sm); border: 1px solid var(--border-color);
-}
-.ohm-filter-btn {
-    background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px; border-radius: 6px;
-    font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); font-family: var(--font-family);
-}
-.ohm-filter-btn.active { background: var(--text-primary); color: #000; }
-.ohm-filter-btn:hover:not(.active) { color: var(--text-primary); }
-.ohm-search-container { flex-grow: 1; position: relative; min-width: 180px; }
-.ohm-search-input {
-    width: 100%; background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary);
-    padding: 9px 12px 9px 36px; border-radius: var(--radius-sm); font-size: 14px; outline: none;
-    transition: var(--transition); font-family: var(--font-family); box-sizing: border-box;
-}
-.ohm-search-input::placeholder { color: #444; }
-.ohm-search-input:focus { border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(255,255,255,0.03); }
-.ohm-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: var(--text-secondary); pointer-events: none;}
-
-@media (max-width: 600px) {
-    .ohm-cards-filters { gap: 8px; }
-    .ohm-search-container { min-width: 100%; }
-}
+.ohm-card:hover .ohm-card-img { filter: brightness(1.1); }
 
 /* Loader */
 .ohm-state-msg {
     padding: 40px 20px; text-align: center; color: var(--text-secondary);
-    background-color: var(--surface-color); border-radius: var(--radius-lg);
+    background-color: var(--surface-color); border-radius: 0;
     border: 1px dashed var(--border-color); grid-column: 1 / -1;
 }
 .ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; }
@@ -1831,21 +1842,6 @@ body { background-color: transparent; margin: 0; padding: 0; }
 </style>
 
 <div class="ohm-cards-widget" id="ohm-cards-container">
-    <div class="ohm-cards-header">
-        <div class="ohm-cards-title" id="ohm-view-title">Upcoming Events</div>
-        <div class="ohm-cards-count" id="ohm-event-count">...</div>
-    </div>
-    <div class="ohm-cards-filters">
-        <div class="ohm-filter-btns">
-            <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
-            <button class="ohm-filter-btn" data-filter="today">Today</button>
-            <button class="ohm-filter-btn" data-filter="all">All</button>
-        </div>
-        <div class="ohm-search-container">
-            <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" class="ohm-search-input" id="ohm-search" placeholder="Search events..." autocomplete="off">
-        </div>
-    </div>
     <div class="ohm-cards-grid" id="ohm-cards-grid">
         <div class="ohm-state-msg"><div class="ohm-loader"></div><p>Loading events...</p></div>
     </div>
@@ -1860,35 +1856,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const USE_REAL_SUPABASE = true; 
 
     const grid = document.getElementById('ohm-cards-grid');
-    const countEl = document.getElementById('ohm-event-count');
-    const titleEl = document.getElementById('ohm-view-title');
-    const searchInput = document.getElementById('ohm-search');
-    const filterBtns = document.querySelectorAll('.ohm-filter-btn');
 
     let allEvents = [];
-    let currentFilter = 'upcoming'; 
-    let searchQuery = '';
-
-    // Event Listeners
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase();
-        applyFilters();
-    });
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentFilter = e.target.getAttribute('data-filter');
-            
-            // Update Title
-            if (currentFilter === 'upcoming') titleEl.textContent = "Upcoming Events";
-            if (currentFilter === 'today') titleEl.textContent = "Today's Events";
-            if (currentFilter === 'all') titleEl.textContent = "All Events";
-            
-            applyFilters();
-        });
-    });
 
     async function fetchEvents() {
         if (!USE_REAL_SUPABASE) {
@@ -1907,148 +1876,48 @@ body { background-color: transparent; margin: 0; padding: 0; }
                     tag: 'Art / Music'
                 }
             ];
-            setTimeout(() => applyFilters(), 500);
+            setTimeout(() => renderCards(allEvents), 500);
             return;
         }
 
         try {
-            // Fetch a bigger chunk (from today onwards) so we can filter locally
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${todayStart.toISOString()}&order=start_time.asc&limit=100`, {
+            // Fetch exactly 3 upcoming events
+            const now = new Date().toISOString();
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${now}&order=start_time.asc&limit=3`, {
                 headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
             });
-            if(response.ok) allEvents = await response.json();
-            applyFilters();
+            if(response.ok) {
+                allEvents = await response.json();
+                renderCards(allEvents);
+            } else {
+                throw new Error("Failed to fetch");
+            }
         } catch(e) { 
             console.error("Cards Widget err:", e);
             grid.innerHTML = `<div class="ohm-state-msg"><p>Failed to load events.</p></div>`;
-            countEl.textContent = "0 events";
         }
-    }
-
-    function applyFilters() {
-        if (allEvents.length === 0) { renderCards([]); return; }
-
-        let filtered = allEvents;
-        const now = new Date();
-        
-        // Date Filter constraints
-        if (currentFilter === 'upcoming') {
-            filtered = filtered.filter(e => new Date(e.start_time) >= now);
-        } else if (currentFilter === 'today') {
-            const todayEnd = new Date(now);
-            todayEnd.setHours(23, 59, 59, 999);
-            const todayStart = new Date(now);
-            todayStart.setHours(0,0,0,0);
-            filtered = filtered.filter(e => {
-                const start = new Date(e.start_time);
-                return start >= todayStart && start <= todayEnd;
-            });
-        } 
-        // 'all' includes everything fetched (which is from todayStart onwards)
-
-        // Search Filter constraint
-        if (searchQuery) {
-            filtered = filtered.filter(e => {
-                const q = searchQuery;
-                const matchTitle = e.title && e.title.toLowerCase().includes(q);
-                const matchLocation = e.location_name && e.location_name.toLowerCase().includes(q);
-                const matchDesc = e.description && e.description.toLowerCase().includes(q);
-                return matchTitle || matchLocation || matchDesc;
-            });
-        }
-
-        renderCards(filtered);
     }
 
     function renderCards(events) {
         grid.innerHTML = '';
-        countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
 
         if (events.length === 0) {
             grid.innerHTML = `<div class="ohm-state-msg"><p>No upcoming events found.</p></div>`;
             return;
         }
 
-        const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        const formatterTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-
         events.forEach(event => {
-            const card = document.createElement('div');
+            const card = document.createElement('a');
             card.className = 'ohm-card';
+            card.href = 'https://ohm518.com/events';
+            card.target = '_blank';
             
-            const dateStr = formatterDate.format(new Date(event.start_time));
-            const startTimeStr = formatterTime.format(new Date(event.start_time));
-            let timeString = `${dateStr} • ${startTimeStr}`;
-            
-            if (event.end_time) {
-                const endTimeStr = formatterTime.format(new Date(event.end_time));
-                timeString += ` - ${endTimeStr}`;
-            }
-
-            // Combine location name and address if both exist
-            let locationString = event.location_name || '';
-            if (event.address) {
-                 locationString += locationString ? `<br><span style="color:#888; font-size:12px;">${event.address}</span>` : event.address;
-            }
-
             card.innerHTML = `
                 ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ohm-card-img" loading="lazy">` : `<div class="ohm-card-img"></div>`}
-                <div class="ohm-card-content">
-                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
-                    <h3 class="ohm-card-title">${event.title}</h3>
-                    
-                    <div class="ohm-card-meta">
-                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
-                        <div>${timeString}</div>
-                    </div>
-                    
-                    ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        <div>${locationString}</div>
-                    </a>` : ''}
-                    
-                    ${event.description ? `
-                        <div class="ohm-card-desc">${event.description}</div>
-                        <div class="ohm-read-more">Read More</div>
-                    ` : '<div style="flex-grow:1;"></div>'}
-                    
-                    ${event.ticket_url ? `
-                    <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
-                        Get Tickets
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                    </a>
-                    ` : ''}
-                </div>
             `;
             grid.appendChild(card);
         });
-
-        // After rendering, detect truncation
-        setTimeout(() => {
-            document.querySelectorAll('.ohm-card').forEach(card => {
-                const desc = card.querySelector('.ohm-card-desc');
-                const btn = card.querySelector('.ohm-read-more');
-                if (desc && btn) {
-                    if (desc.scrollHeight > desc.clientHeight) {
-                        btn.style.display = 'block';
-                    }
-                }
-            });
-        }, 50);
     }
-
-    // Toggle Read More
-    document.getElementById('ohm-cards-grid').addEventListener('click', (e) => {
-        if (e.target.classList.contains('ohm-read-more')) {
-            const btn = e.target;
-            const desc = btn.previousElementSibling;
-            const isExpanded = desc.classList.toggle('expanded');
-            btn.textContent = isExpanded ? 'Read Less' : 'Read More';
-        }
-    });
 
     fetchEvents();
 })();
@@ -2106,15 +1975,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
 
 .ohm-cards-widget * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.ohm-cards-header {
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;
-}
-.ohm-cards-title { font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
-.ohm-cards-count { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
-
 .ohm-cards-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
 }
 
 @media (max-width: 600px) {
@@ -2122,76 +1984,22 @@ body { background-color: transparent; margin: 0; padding: 0; }
 }
 
 .ohm-card {
-    background-color: var(--surface-color); border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
-    transition: var(--transition); height: 100%;
+    background-color: transparent; border: none;
+    border-radius: 0; overflow: hidden; display: block;
+    transition: var(--transition); height: 100%; text-decoration: none;
 }
-.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
+.ohm-card:hover { transform: translateY(-4px); }
 
-.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: transparent; border-bottom: 1px solid var(--border-color); }
-
-.ohm-card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
-
-.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
-
-.ohm-card-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
-
-.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
-.ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
-
-.ohm-card-desc {
-    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 8px;
-    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+.ohm-card-img { 
+    width: 100%; aspect-ratio: 2 / 3; object-fit: contain; object-position: center;
+    background-color: transparent; display: block; transition: var(--transition);
 }
-.ohm-card-desc.expanded {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-}
-.ohm-read-more {
-    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
-    margin-bottom: 16px; opacity: 0.8; transition: opacity 0.2s; display: none;
-}
-.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
-
-.ohm-ticket-btn {
-    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
-    background-color: var(--text-primary); color: #000; padding: 10px 16px;
-    border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 600;
-    transition: var(--transition); border: 1px solid transparent; width: 100%;
-}
-.ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
-
-/* Filters &amp; Search */
-.ohm-cards-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
-.ohm-filter-btns {
-    display: flex; gap: 4px; background: var(--surface-color); padding: 4px;
-    border-radius: var(--radius-sm); border: 1px solid var(--border-color);
-}
-.ohm-filter-btn {
-    background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px; border-radius: 6px;
-    font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); font-family: var(--font-family);
-}
-.ohm-filter-btn.active { background: var(--text-primary); color: #000; }
-.ohm-filter-btn:hover:not(.active) { color: var(--text-primary); }
-.ohm-search-container { flex-grow: 1; position: relative; min-width: 180px; }
-.ohm-search-input {
-    width: 100%; background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary);
-    padding: 9px 12px 9px 36px; border-radius: var(--radius-sm); font-size: 14px; outline: none;
-    transition: var(--transition); font-family: var(--font-family); box-sizing: border-box;
-}
-.ohm-search-input::placeholder { color: #444; }
-.ohm-search-input:focus { border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(255,255,255,0.03); }
-.ohm-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: var(--text-secondary); pointer-events: none;}
-
-@media (max-width: 600px) {
-    .ohm-cards-filters { gap: 8px; }
-    .ohm-search-container { min-width: 100%; }
-}
+.ohm-card:hover .ohm-card-img { filter: brightness(1.1); }
 
 /* Loader */
 .ohm-state-msg {
     padding: 40px 20px; text-align: center; color: var(--text-secondary);
-    background-color: var(--surface-color); border-radius: var(--radius-lg);
+    background-color: var(--surface-color); border-radius: 0;
     border: 1px dashed var(--border-color); grid-column: 1 / -1;
 }
 .ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; }
@@ -2199,21 +2007,6 @@ body { background-color: transparent; margin: 0; padding: 0; }
 &lt;/style&gt;
 
 &lt;div class=&quot;ohm-cards-widget&quot; id=&quot;ohm-cards-container&quot;&gt;
-    &lt;div class=&quot;ohm-cards-header&quot;&gt;
-        &lt;div class=&quot;ohm-cards-title&quot; id=&quot;ohm-view-title&quot;&gt;Upcoming Events&lt;/div&gt;
-        &lt;div class=&quot;ohm-cards-count&quot; id=&quot;ohm-event-count&quot;&gt;...&lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div class=&quot;ohm-cards-filters&quot;&gt;
-        &lt;div class=&quot;ohm-filter-btns&quot;&gt;
-            &lt;button class=&quot;ohm-filter-btn active&quot; data-filter=&quot;upcoming&quot;&gt;Upcoming&lt;/button&gt;
-            &lt;button class=&quot;ohm-filter-btn&quot; data-filter=&quot;today&quot;&gt;Today&lt;/button&gt;
-            &lt;button class=&quot;ohm-filter-btn&quot; data-filter=&quot;all&quot;&gt;All&lt;/button&gt;
-        &lt;/div&gt;
-        &lt;div class=&quot;ohm-search-container&quot;&gt;
-            &lt;svg class=&quot;ohm-search-icon&quot; viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z&quot;/&gt;&lt;/svg&gt;
-            &lt;input type=&quot;text&quot; class=&quot;ohm-search-input&quot; id=&quot;ohm-search&quot; placeholder=&quot;Search events...&quot; autocomplete=&quot;off&quot;&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
     &lt;div class=&quot;ohm-cards-grid&quot; id=&quot;ohm-cards-grid&quot;&gt;
         &lt;div class=&quot;ohm-state-msg&quot;&gt;&lt;div class=&quot;ohm-loader&quot;&gt;&lt;/div&gt;&lt;p&gt;Loading events...&lt;/p&gt;&lt;/div&gt;
     &lt;/div&gt;
@@ -2228,35 +2021,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const USE_REAL_SUPABASE = true; 
 
     const grid = document.getElementById(&#039;ohm-cards-grid&#039;);
-    const countEl = document.getElementById(&#039;ohm-event-count&#039;);
-    const titleEl = document.getElementById(&#039;ohm-view-title&#039;);
-    const searchInput = document.getElementById(&#039;ohm-search&#039;);
-    const filterBtns = document.querySelectorAll(&#039;.ohm-filter-btn&#039;);
 
     let allEvents = [];
-    let currentFilter = &#039;upcoming&#039;; 
-    let searchQuery = &#039;&#039;;
-
-    // Event Listeners
-    searchInput.addEventListener(&#039;input&#039;, (e) =&gt; {
-        searchQuery = e.target.value.toLowerCase();
-        applyFilters();
-    });
-
-    filterBtns.forEach(btn =&gt; {
-        btn.addEventListener(&#039;click&#039;, (e) =&gt; {
-            filterBtns.forEach(b =&gt; b.classList.remove(&#039;active&#039;));
-            e.target.classList.add(&#039;active&#039;);
-            currentFilter = e.target.getAttribute(&#039;data-filter&#039;);
-            
-            // Update Title
-            if (currentFilter === &#039;upcoming&#039;) titleEl.textContent = &quot;Upcoming Events&quot;;
-            if (currentFilter === &#039;today&#039;) titleEl.textContent = &quot;Today&#039;s Events&quot;;
-            if (currentFilter === &#039;all&#039;) titleEl.textContent = &quot;All Events&quot;;
-            
-            applyFilters();
-        });
-    });
 
     async function fetchEvents() {
         if (!USE_REAL_SUPABASE) {
@@ -2275,118 +2041,44 @@ body { background-color: transparent; margin: 0; padding: 0; }
                     tag: &#039;Art / Music&#039;
                 }
             ];
-            setTimeout(() =&gt; applyFilters(), 500);
+            setTimeout(() =&gt; renderCards(allEvents), 500);
             return;
         }
 
         try {
-            // Fetch a bigger chunk (from today onwards) so we can filter locally
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&amp;start_time=gte.${todayStart.toISOString()}&amp;order=start_time.asc&amp;limit=100`, {
+            // Fetch exactly 3 upcoming events
+            const now = new Date().toISOString();
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&amp;start_time=gte.${now}&amp;order=start_time.asc&amp;limit=3`, {
                 headers: { &#039;apikey&#039;: SUPABASE_ANON_KEY, &#039;Authorization&#039;: `Bearer ${SUPABASE_ANON_KEY}` }
             });
-            if(response.ok) allEvents = await response.json();
-            applyFilters();
+            if(response.ok) {
+                allEvents = await response.json();
+                renderCards(allEvents);
+            } else {
+                throw new Error(&quot;Failed to fetch&quot;);
+            }
         } catch(e) { 
             console.error(&quot;Cards Widget err:&quot;, e);
             grid.innerHTML = `&lt;div class=&quot;ohm-state-msg&quot;&gt;&lt;p&gt;Failed to load events.&lt;/p&gt;&lt;/div&gt;`;
-            countEl.textContent = &quot;0 events&quot;;
         }
-    }
-
-    function applyFilters() {
-        if (allEvents.length === 0) { renderCards([]); return; }
-
-        let filtered = allEvents;
-        const now = new Date();
-        
-        // Date Filter constraints
-        if (currentFilter === &#039;upcoming&#039;) {
-            filtered = filtered.filter(e =&gt; new Date(e.start_time) &gt;= now);
-        } else if (currentFilter === &#039;today&#039;) {
-            const todayEnd = new Date(now);
-            todayEnd.setHours(23, 59, 59, 999);
-            const todayStart = new Date(now);
-            todayStart.setHours(0,0,0,0);
-            filtered = filtered.filter(e =&gt; {
-                const start = new Date(e.start_time);
-                return start &gt;= todayStart &amp;&amp; start &lt;= todayEnd;
-            });
-        } 
-        // &#039;all&#039; includes everything fetched (which is from todayStart onwards)
-
-        // Search Filter constraint
-        if (searchQuery) {
-            filtered = filtered.filter(e =&gt; {
-                const q = searchQuery;
-                const matchTitle = e.title &amp;&amp; e.title.toLowerCase().includes(q);
-                const matchLocation = e.location_name &amp;&amp; e.location_name.toLowerCase().includes(q);
-                const matchDesc = e.description &amp;&amp; e.description.toLowerCase().includes(q);
-                return matchTitle || matchLocation || matchDesc;
-            });
-        }
-
-        renderCards(filtered);
     }
 
     function renderCards(events) {
         grid.innerHTML = &#039;&#039;;
-        countEl.textContent = `${events.length} event${events.length === 1 ? &#039;&#039; : &#039;s&#039;}`;
 
         if (events.length === 0) {
             grid.innerHTML = `&lt;div class=&quot;ohm-state-msg&quot;&gt;&lt;p&gt;No upcoming events found.&lt;/p&gt;&lt;/div&gt;`;
             return;
         }
 
-        const formatterDate = new Intl.DateTimeFormat(&#039;en-US&#039;, { weekday: &#039;short&#039;, month: &#039;short&#039;, day: &#039;numeric&#039; });
-        const formatterTime = new Intl.DateTimeFormat(&#039;en-US&#039;, { hour: &#039;numeric&#039;, minute: &#039;2-digit&#039; });
-
         events.forEach(event =&gt; {
-            const card = document.createElement(&#039;div&#039;);
+            const card = document.createElement(&#039;a&#039;);
             card.className = &#039;ohm-card&#039;;
+            card.href = &#039;https://ohm518.com/events&#039;;
+            card.target = &#039;_blank&#039;;
             
-            const dateStr = formatterDate.format(new Date(event.start_time));
-            const startTimeStr = formatterTime.format(new Date(event.start_time));
-            let timeString = `${dateStr} • ${startTimeStr}`;
-            
-            if (event.end_time) {
-                const endTimeStr = formatterTime.format(new Date(event.end_time));
-                timeString += ` - ${endTimeStr}`;
-            }
-
-            // Combine location name and address if both exist
-            let locationString = event.location_name || &#039;&#039;;
-            if (event.address) {
-                 locationString += locationString ? `&lt;br&gt;&lt;span style=&quot;color:#888; font-size:12px;&quot;&gt;${event.address}&lt;/span&gt;` : event.address;
-            }
-
             card.innerHTML = `
                 ${event.image_url ? `&lt;img src=&quot;${event.image_url}&quot; alt=&quot;${event.title}&quot; class=&quot;ohm-card-img&quot; loading=&quot;lazy&quot;&gt;` : `&lt;div class=&quot;ohm-card-img&quot;&gt;&lt;/div&gt;`}
-                &lt;div class=&quot;ohm-card-content&quot;&gt;
-                    ${event.tag ? `&lt;div class=&quot;ohm-card-tag&quot;&gt;${event.tag}&lt;/div&gt;` : &#039;&#039;}
-                    &lt;h3 class=&quot;ohm-card-title&quot;&gt;${event.title}&lt;/h3&gt;
-                    
-                    &lt;div class=&quot;ohm-card-meta&quot;&gt;
-                        &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z&quot;/&gt;&lt;/svg&gt;
-                        &lt;div&gt;${timeString}&lt;/div&gt;
-                    &lt;/div&gt;
-                    
-                    ${locationString ? `
-                    &lt;div class=&quot;ohm-card-meta&quot;&gt;
-                        &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z&quot;/&gt;&lt;/svg&gt;
-                        &lt;div&gt;${locationString}&lt;/div&gt;
-                    &lt;/div&gt;` : &#039;&#039;}
-                    
-                    ${event.description ? `&lt;div class=&quot;ohm-card-desc&quot;&gt;${event.description}&lt;/div&gt;` : &#039;&lt;div style=&quot;flex-grow:1;&quot;&gt;&lt;/div&gt;&#039;}
-                    
-                    ${event.ticket_url ? `
-                    &lt;a href=&quot;${event.ticket_url}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot; class=&quot;ohm-ticket-btn&quot;&gt;
-                        Get Tickets
-                        &lt;svg width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;&gt;&lt;line x1=&quot;5&quot; y1=&quot;12&quot; x2=&quot;19&quot; y2=&quot;12&quot;&gt;&lt;/line&gt;&lt;polyline points=&quot;12 5 19 12 12 19&quot;&gt;&lt;/polyline&gt;&lt;/svg&gt;
-                    &lt;/a&gt;
-                    ` : &#039;&#039;}
-                &lt;/div&gt;
             `;
             grid.appendChild(card);
         });

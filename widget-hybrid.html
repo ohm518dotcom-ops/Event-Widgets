@@ -296,9 +296,32 @@ body { background-color: transparent; margin: 0; padding: 0; }
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08) !important; 
     border-radius: 12px;
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
 }
 </style>
 
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://ohm518.com/donate" target="_blank">Donate here.</a>
+</div>
 <div class="ohm-hybrid-layout" id="ohm-hybrid-layout">
     <!-- Calendar Component Modal -->
     <div class="ohm-modal-backdrop" id="ohm-calendar-backdrop"></div>
@@ -410,7 +433,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
         <div class="ohm-cards-filters">
             <div class="ohm-filter-btns">
                 <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
-                <button class="ohm-filter-btn" data-filter="all">Time: All</button>
+                <button class="ohm-filter-btn" data-filter="archived">Archived Events</button>
                 <button class="ohm-filter-btn" id="ohm-calendar-toggle" data-filter="calendar_date" title="Pick a Date...">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
                 </button>
@@ -422,10 +445,6 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                 <input type="text" class="ohm-search-input" id="ohm-search" placeholder="Search events..." autocomplete="off">
             </div>
-            <label id="ohm-archive-toggle-wrapper" style="display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none; margin-left: auto;">
-                <input type="checkbox" id="ohm-archive-checkbox" style="accent-color: var(--text-primary); cursor: pointer;">
-                Archive
-            </label>
         </div>
         <div class="ohm-cards-grid" id="ohm-cards-grid">
             <div class="ohm-state-msg"><div class="ohm-loader" style="display:block;"></div><p>Loading events...</p></div>
@@ -476,16 +495,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     let selectedDateFilter = null; // Stored as "YYYY-MM-DD"
     
     let archiveFetched = false;
-    const archiveCheckbox = document.getElementById('ohm-archive-checkbox');
-    if (archiveCheckbox) {
-        archiveCheckbox.addEventListener('change', async () => {
-            if (archiveCheckbox.checked && !archiveFetched) {
-                await fetchArchiveEvents();
-            } else {
-                applyFilters();
-            }
-        });
-    }
+
 
     async function fetchArchiveEvents() {
         loader.style.display = 'block';
@@ -708,13 +718,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
         let prefix = currentViewMode === 'ohm' ? "OHM " : "All ";
         if (currentFilter === 'upcoming') titleEl.textContent = prefix + "Upcoming Events";
         if (currentFilter === 'today') titleEl.textContent = prefix + "Today's Events";
-        if (currentFilter === 'all') titleEl.textContent = prefix + "Events";
+        if (currentFilter === 'archived') titleEl.textContent = prefix + "Archived Events";
         if (currentFilter === 'map') titleEl.textContent = prefix + "Map View";
-        
-        const archiveWrapper = document.getElementById('ohm-archive-toggle-wrapper');
-        if (archiveWrapper) {
-            archiveWrapper.style.display = (currentFilter === 'all' || currentFilter === 'map') ? 'flex' : 'none';
-        }
         
         if (currentFilter !== 'map') {
             cardsGrid.style.display = ''; 
@@ -731,13 +736,17 @@ body { background-color: transparent; margin: 0; padding: 0; }
     filterBtns.forEach(btn => {
             if (btn.id === 'ohm-calendar-toggle' || btn.id === 'ohm-map-toggle') return;
             
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 currentFilter = btn.getAttribute('data-filter');
                 selectedDateFilter = null; // Clear calendar selection
                 document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
                 
                 updateFilterButtonsUI();
-                applyFilters();
+                if (currentFilter === 'archived' && !archiveFetched) {
+                    await fetchArchiveEvents();
+                } else {
+                    applyFilters();
+                }
             });
         });
 
@@ -777,22 +786,21 @@ body { background-color: transparent; margin: 0; padding: 0; }
             filtered = filtered.filter(e => !e.email);
         }
 
-        const now = new Date();
-        const archiveCheckbox = document.getElementById('ohm-archive-checkbox');
+        const upcomingThreshold = new Date();
+        upcomingThreshold.setHours(0,0,0,0);
         
         if (currentFilter === 'calendar_date' && selectedDateFilter) {
             const [y, m, d] = selectedDateFilter.split('-').map(Number);
             filtered = filtered.filter(e => e._dateObj.getFullYear() === y && 
                                             e._dateObj.getMonth() === m - 1 && 
                                             e._dateObj.getDate() === d);
-        } else if (currentFilter === 'upcoming' || ((currentFilter === 'map' || currentFilter === 'all') && (!archiveCheckbox || !archiveCheckbox.checked))) {
-            const upcomingThreshold = new Date();
-            upcomingThreshold.setHours(0,0,0,0);
+        } else if (currentFilter === 'upcoming' || currentFilter === 'map') {
             filtered = filtered.filter(e => e._dateObj >= upcomingThreshold);
         } else if (currentFilter === 'today') {
-            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
             const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(e => e._dateObj >= todayStart && e._dateObj <= todayEnd);
+            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && e._dateObj <= todayEnd);
+        } else if (currentFilter === 'archived') {
+            filtered = filtered.filter(e => e._dateObj < upcomingThreshold);
         }
 
         if (searchQuery) {
@@ -855,7 +863,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         <div>${timeString}</div>
                     </div>` : ''}
                     ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}
@@ -925,7 +933,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                         <div>${timeString}</div>
                     </div>
                     ${locationString ? `
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location_name)}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
                         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                         <div>${locationString}</div>
                     </a>` : ''}

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const basePath = `c:\\Users\\hi\\Desktop\\event-calendar`;
+const basePath = __dirname;
 
 const calendarHtml = fs.readFileSync(path.join(basePath, 'widget-calendar.html'), 'utf-8');
 const mapHtml = fs.readFileSync(path.join(basePath, 'widget-map.html'), 'utf-8');
