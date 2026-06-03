@@ -84,8 +84,32 @@ body { background-color: #060606; margin: 0; padding: 24px; }
     transition: all 0.2s; border: 1px solid transparent; width: 100%;
 }
 .ohm-ticket-btn:hover { background-color: #000; color: #fff; border-color: #fff; }
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
 </style>
 
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://www.gofundme.com/f/build-a-long-lasting-infrastructure-for-the-electronic-arts?lang=en_US" target="_blank">Donate here.</a>
+</div>
 <div class="ohm-map-widget" id="ohm-map-widget-layout">
     <div id="ohm-map-container"></div>
 </div>

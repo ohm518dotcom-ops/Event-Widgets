@@ -54,8 +54,32 @@ body { background-color: transparent; margin: 0; padding: 0; }
 }
 .ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #fff; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; }
 @keyframes ohm-spin { to { transform: rotate(360deg); } }
+.ohm-donate-callout {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #ffffff;
+    text-decoration: underline !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
 </style>
 
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://www.gofundme.com/f/build-a-long-lasting-infrastructure-for-the-electronic-arts?lang=en_US" target="_blank">Donate here.</a>
+</div>
 <div class="ohm-cards-widget" id="ohm-cards-container">
     <div class="ohm-cards-grid" id="ohm-cards-grid">
         <div class="ohm-state-msg"><div class="ohm-loader"></div><p>Loading events...</p></div>
