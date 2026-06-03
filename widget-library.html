@@ -418,6 +418,18 @@ body { background-color: transparent; margin: 0; padding: 0; }
 .ohm-donate-callout a:hover {
     opacity: 0.8;
 }
+.ohm-badge {
+    background: #ffffff;
+    color: #000000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+}
 </style>
 
 <div class="ohm-donate-callout">
@@ -684,7 +696,10 @@ body { background-color: transparent; margin: 0; padding: 0; }
             card.innerHTML = `
                 ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ohm-card-img" loading="lazy">` : ''}
                 <div class="ohm-card-content">
-                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        ${event.tag ? `<div class="ohm-card-tag" style="margin-bottom: 0;">${event.tag}</div>` : '<div></div>'}
+                        ${!event.email ? `<span class="ohm-badge">OHM Presents</span>` : ''}
+                    </div>
                     <h3 class="ohm-card-title">${event.title}</h3>
                     <div class="ohm-card-meta">
                         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
@@ -994,6 +1009,18 @@ body { background-color: transparent; margin: 0; padding: 0; }
 .ohm-donate-callout a:hover {
     opacity: 0.8;
 }
+.ohm-badge {
+    background: #ffffff;
+    color: #000000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+}
 &lt;/style&gt;
 
 &lt;div class=&quot;ohm-donate-callout&quot;&gt;
@@ -1260,7 +1287,10 @@ body { background-color: transparent; margin: 0; padding: 0; }
             card.innerHTML = `
                 ${event.image_url ? `&lt;img src=&quot;${event.image_url}&quot; alt=&quot;${event.title}&quot; class=&quot;ohm-card-img&quot; loading=&quot;lazy&quot;&gt;` : &#039;&#039;}
                 &lt;div class=&quot;ohm-card-content&quot;&gt;
-                    ${event.tag ? `&lt;div class=&quot;ohm-card-tag&quot;&gt;${event.tag}&lt;/div&gt;` : &#039;&#039;}
+                    &lt;div style=&quot;display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;&quot;&gt;
+                        ${event.tag ? `&lt;div class=&quot;ohm-card-tag&quot; style=&quot;margin-bottom: 0;&quot;&gt;${event.tag}&lt;/div&gt;` : &#039;&lt;div&gt;&lt;/div&gt;&#039;}
+                        ${!event.email ? `&lt;span class=&quot;ohm-badge&quot;&gt;OHM Presents&lt;/span&gt;` : &#039;&#039;}
+                    &lt;/div&gt;
                     &lt;h3 class=&quot;ohm-card-title&quot;&gt;${event.title}&lt;/h3&gt;
                     &lt;div class=&quot;ohm-card-meta&quot;&gt;
                         &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z&quot;/&gt;&lt;/svg&gt;

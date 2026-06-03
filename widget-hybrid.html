@@ -318,6 +318,18 @@ body { background-color: transparent; margin: 0; padding: 0; }
 .ohm-donate-callout a:hover {
     opacity: 0.8;
 }
+.ohm-badge {
+    background: #ffffff;
+    color: #000000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+}
 </style>
 
 <div class="ohm-donate-callout">
@@ -434,6 +446,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
         <div class="ohm-cards-filters">
             <div class="ohm-filter-btns">
                 <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
+                <button class="ohm-filter-btn" data-filter="ohm_only">OHM Presents</button>
                 <button class="ohm-filter-btn" data-filter="archived">Archived Events</button>
                 <button class="ohm-filter-btn" id="ohm-calendar-toggle" data-filter="calendar_date" title="Pick a Date...">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
@@ -733,6 +746,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
         if (currentFilter === 'upcoming') titleEl.textContent = prefix + "Upcoming Events";
         if (currentFilter === 'today') titleEl.textContent = prefix + "Today's Events";
         if (currentFilter === 'archived') titleEl.textContent = prefix + "Archived Events";
+        if (currentFilter === 'ohm_only') titleEl.textContent = "OHM Presents";
         if (currentFilter === 'map') titleEl.textContent = prefix + "Map View";
         
         if (currentFilter !== 'map') {
@@ -817,6 +831,8 @@ body { background-color: transparent; margin: 0; padding: 0; }
             filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && e._dateObj <= todayEnd);
         } else if (currentFilter === 'archived') {
             filtered = filtered.filter(e => e._dateObj < upcomingThreshold);
+        } else if (currentFilter === 'ohm_only') {
+            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && !e.email);
         }
 
         if (searchQuery) {
@@ -944,7 +960,10 @@ body { background-color: transparent; margin: 0; padding: 0; }
             card.innerHTML = `
                 ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ohm-card-img" loading="lazy">` : `<div class="ohm-card-img"></div>`}
                 <div class="ohm-card-content">
-                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        ${event.tag ? `<div class="ohm-card-tag" style="margin-bottom: 0;">${event.tag}</div>` : '<div></div>'}
+                        ${!event.email ? `<span class="ohm-badge">OHM Presents</span>` : ''}
+                    </div>
                     <h3 class="ohm-card-title">${event.title}</h3>
                     <div class="ohm-card-meta">
                         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
