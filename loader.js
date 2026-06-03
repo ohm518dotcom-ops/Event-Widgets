@@ -13,7 +13,7 @@
      */
     async function loadWidget(container, widgetName) {
         try {
-            const response = await fetch(`${baseUrl}widget-${widgetName}.html`);
+            const response = await fetch(`${baseUrl}widget-${widgetName}.html?_t=${Date.now()}`);
             if (!response.ok) throw new Error(`Failed to load widget: ${widgetName}`);
             
             const rawHtml = await response.text();

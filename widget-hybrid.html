@@ -320,7 +320,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
 </style>
 
 <div class="ohm-donate-callout">
-    Support the work of OHM. <a href="https://ohm518.com/donate" target="_blank">Donate here.</a>
+    Support the work of OHM. <a href="https://www.gofundme.com/f/build-a-long-lasting-infrastructure-for-the-electronic-arts?lang=en_US" target="_blank">Donate here.</a>
 </div>
 <div class="ohm-hybrid-layout" id="ohm-hybrid-layout">
     <!-- Calendar Component Modal -->
@@ -489,7 +489,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     // Read the view mode from the container's data attribute, defaulting to 'ohm'
     const layoutEl = document.getElementById('ohm-hybrid-layout');
     const containerEl = layoutEl ? layoutEl.parentElement : null;
-    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'ohm';
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
     console.log("[OHM Debug] Resolved currentViewMode:", currentViewMode, "from containerEl:", containerEl);
     
     let searchQuery = '';
