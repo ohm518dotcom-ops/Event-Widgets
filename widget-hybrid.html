@@ -490,6 +490,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     const layoutEl = document.getElementById('ohm-hybrid-layout');
     const containerEl = layoutEl ? layoutEl.parentElement : null;
     let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'ohm';
+    console.log("[OHM Debug] Resolved currentViewMode:", currentViewMode, "from containerEl:", containerEl);
     
     let searchQuery = '';
     let selectedDateFilter = null; // Stored as "YYYY-MM-DD"
@@ -779,11 +780,13 @@ body { background-color: transparent; margin: 0; padding: 0; }
     function applyFilters() {
         // Base filter: must not be pending
         let filtered = allEvents.filter(e => e.status !== 'pending');
+        console.log("[OHM Debug] applyFilters starting. total events:", allEvents.length, "non-pending:", filtered.length);
 
         // View Mode Filter: OHM only vs All
         if (currentViewMode === 'ohm') {
             // "OHM Events" = events created without an email (internal admin creation)
             filtered = filtered.filter(e => !e.email);
+            console.log("[OHM Debug] ohm mode. events remaining after email check:", filtered.length);
         }
 
         const upcomingThreshold = new Date();
@@ -814,8 +817,10 @@ body { background-color: transparent; margin: 0; padding: 0; }
         }
 
         if (currentFilter === 'map') {
+            console.log("[OHM Debug] Rendering map with events:", filtered.length, filtered);
             renderMap(filtered);
         } else {
+            console.log("[OHM Debug] Rendering cards with events:", filtered.length, filtered);
             renderCards(filtered);
         }
     }
