@@ -541,7 +541,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 
                 // Apply View Mode Filtering
                 if (currentViewMode === 'ohm') {
-                    fetched = fetched.filter(e => !e.email);
+                    fetched = fetched.filter(e => !e.email || e.email.includes('#ohm'));
                 }
                 
                 events = fetched;
@@ -698,7 +698,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 <div class="ohm-card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         ${event.tag ? `<div class="ohm-card-tag" style="margin-bottom: 0;">${event.tag}</div>` : '<div></div>'}
-                        ${!event.email ? `<span class="ohm-badge">OHM Presents</span>` : ''}
+                        ${!event.email || event.email.includes('#ohm') ? `<span class="ohm-badge">OHM Presents</span>` : ''}
                     </div>
                     <h3 class="ohm-card-title">${event.title}</h3>
                     <div class="ohm-card-meta">
@@ -1132,7 +1132,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 
                 // Apply View Mode Filtering
                 if (currentViewMode === &#039;ohm&#039;) {
-                    fetched = fetched.filter(e =&gt; !e.email);
+                    fetched = fetched.filter(e =&gt; !e.email || e.email.includes(&#039;#ohm&#039;));
                 }
                 
                 events = fetched;
@@ -1289,7 +1289,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 &lt;div class=&quot;ohm-card-content&quot;&gt;
                     &lt;div style=&quot;display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;&quot;&gt;
                         ${event.tag ? `&lt;div class=&quot;ohm-card-tag&quot; style=&quot;margin-bottom: 0;&quot;&gt;${event.tag}&lt;/div&gt;` : &#039;&lt;div&gt;&lt;/div&gt;&#039;}
-                        ${!event.email ? `&lt;span class=&quot;ohm-badge&quot;&gt;OHM Presents&lt;/span&gt;` : &#039;&#039;}
+                        ${!event.email || event.email.includes(&#039;#ohm&#039;) ? `&lt;span class=&quot;ohm-badge&quot;&gt;OHM Presents&lt;/span&gt;` : &#039;&#039;}
                     &lt;/div&gt;
                     &lt;h3 class=&quot;ohm-card-title&quot;&gt;${event.title}&lt;/h3&gt;
                     &lt;div class=&quot;ohm-card-meta&quot;&gt;

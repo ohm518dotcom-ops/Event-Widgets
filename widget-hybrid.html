@@ -603,7 +603,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
             // Check if there are any events for the current view mode
             let viewEvents = allEvents.filter(e => e.status !== 'pending');
             if (currentViewMode === 'ohm') {
-                viewEvents = viewEvents.filter(e => !e.email);
+                viewEvents = viewEvents.filter(e => !e.email || e.email.includes('#ohm'));
             }
             if (viewEvents.length === 0) {
                 if (containerEl) containerEl.style.display = 'none';
@@ -659,7 +659,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 // Check if this date has events
                 const hasEvent = allEvents.some(e => {
                     if (e.status === 'pending') return false;
-                    if (currentViewMode === 'ohm' && e.email) return false;
+                    if (currentViewMode === 'ohm' && e.email && !e.email.includes('#ohm')) return false;
                     return e._dateObj.getFullYear() === year && e._dateObj.getMonth() === month && e._dateObj.getDate() === dayNum;
                 });
                 
@@ -812,7 +812,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
         // View Mode Filter: OHM only vs All
         if (currentViewMode === 'ohm') {
             // "OHM Events" = events created without an email (internal admin creation)
-            filtered = filtered.filter(e => !e.email);
+            filtered = filtered.filter(e => !e.email || e.email.includes('#ohm'));
             console.log("[OHM Debug] ohm mode. events remaining after email check:", filtered.length);
         }
 
@@ -832,7 +832,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
         } else if (currentFilter === 'archived') {
             filtered = filtered.filter(e => e._dateObj < upcomingThreshold);
         } else if (currentFilter === 'ohm_only') {
-            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && !e.email);
+            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && (!e.email || e.email.includes('#ohm')));
         }
 
         if (searchQuery) {
@@ -962,7 +962,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 <div class="ohm-card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         ${event.tag ? `<div class="ohm-card-tag" style="margin-bottom: 0;">${event.tag}</div>` : '<div></div>'}
-                        ${!event.email ? `<span class="ohm-badge">OHM Presents</span>` : ''}
+                        ${!event.email || event.email.includes('#ohm') ? `<span class="ohm-badge">OHM Presents</span>` : ''}
                     </div>
                     <h3 class="ohm-card-title">${event.title}</h3>
                     <div class="ohm-card-meta">
