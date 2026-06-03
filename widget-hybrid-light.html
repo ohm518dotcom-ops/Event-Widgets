@@ -1,0 +1,1190 @@
+<!-- WEBFLOW EMBED: Hybrid Widget Starts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body { background-color: #ffffff; margin: 0; padding: 24px; }
+/* Vibe & Variables */
+.ohm-hybrid-layout {
+    --surface-color: #ffffff;
+    --surface-elevated: #f9f9f9;
+    --text-primary: #000000;
+    --text-secondary: rgba(0, 0, 0, 0.6);
+    --border-color: #e0e0e0;
+    --border-hover: #b3b3b3;
+    --bg-base: #ffffff;
+    --accent-color: #000000;
+    --glass-hover: rgba(0, 0, 0, 0.05);
+    --font-family: 'Inter', sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --transition: all 0.2s ease;
+    
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow-x: hidden;
+    gap: 24px;
+    font-family: var(--font-family);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ohm-hybrid-layout * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Calendar Modal Styles */
+.ohm-calendar-widget {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: 340px;
+    max-width: 90vw;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.15);
+}
+.ohm-calendar-widget.open {
+    display: flex;
+}
+.ohm-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.7);
+    z-index: 999;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+.ohm-modal-backdrop.open {
+    display: block;
+}
+.ohm-calendar-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
+}
+.ohm-calendar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.ohm-nav-btns { display: flex; gap: 6px; }
+.ohm-icon-btn {
+    background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+    cursor: pointer; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; transition: var(--transition);
+}
+.ohm-icon-btn:hover { background-color: var(--glass-hover); color: var(--text-primary); border-color: var(--border-color); }
+.ohm-icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.ohm-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+    font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.ohm-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.ohm-day {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; border-radius: var(--radius-sm); font-size: 14px;
+    transition: var(--transition); position: relative; user-select: none;
+}
+.ohm-day.active-month:hover { background-color: var(--glass-hover); cursor: pointer; }
+.ohm-day.other-month { color: #ccc; }
+.ohm-day.today { font-weight: 700; }
+.ohm-day.today::before {
+    content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+    width: 5px; height: 5px; background-color: var(--accent-color); border-radius: 50%;
+}
+.ohm-day.selected {
+    background-color: var(--text-primary); color: #fff; font-weight: 700; border: none !important;
+}
+.ohm-day.has-events::after {
+    content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; background-color: var(--text-primary); border-radius: 50%;
+}
+.ohm-day.disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Cards Styles */
+.ohm-cards-widget { width: 100%; display: flex; flex-direction: column; background-color: transparent;}
+.ohm-cards-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;
+}
+.ohm-cards-title { font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.ohm-cards-count { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+.ohm-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+@media (max-width: 600px) {
+    .ohm-cards-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+.ohm-card {
+    background-color: transparent; border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
+    transition: var(--transition); height: 100%;
+}
+.ohm-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.ohm-card-img { width: 100%; aspect-ratio: 4 / 5; object-fit: contain; object-position: center; background-color: #f9f9f9; border-bottom: 1px solid var(--border-color); }
+.ohm-card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
+.ohm-card-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+.ohm-card-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; color: var(--text-primary); }
+.ohm-card-meta { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4;}
+.ohm-card-meta svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; margin-top: 2px;}
+.ohm-card-desc {
+    font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 12px; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+}
+.ohm-card-desc.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+.ohm-read-more {
+    color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; text-underline-offset: 3px;
+    margin-bottom: 16px; opacity: 0.8; transition: opacity 0.2s; display: none;
+}
+.ohm-read-more:hover { opacity: 1; text-decoration: underline; }
+.ohm-ticket-btn {
+    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+    background-color: var(--text-primary); color: #fff; padding: 10px 16px;
+    border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 600;
+    transition: var(--transition); border: 1px solid transparent; width: 100%;
+}
+.ohm-ticket-btn:hover { background-color: transparent; color: var(--text-primary); border-color: var(--text-primary); }
+
+/* Filters & Search */
+.ohm-cards-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
+.ohm-filter-btns {
+    display: flex; gap: 4px; background: var(--surface-color); padding: 4px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border-color);
+}
+.ohm-filter-btn {
+    background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); font-family: var(--font-family);
+}
+.ohm-filter-btn.active { background: var(--text-primary); color: #fff; }
+.ohm-filter-btn:hover:not(.active) { color: var(--text-primary); }
+.ohm-search-container { flex-grow: 1; position: relative; min-width: 180px; }
+.ohm-search-input {
+    width: 100%; background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary);
+    padding: 9px 12px 9px 36px; border-radius: var(--radius-sm); font-size: 14px; outline: none;
+    transition: var(--transition); font-family: var(--font-family); box-sizing: border-box;
+}
+.ohm-search-input::placeholder { color: #888; }
+.ohm-search-input:focus { border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(0,0,0,0.03); }
+.ohm-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: var(--text-secondary); pointer-events: none;}
+
+@media (max-width: 600px) {
+    .ohm-cards-filters { gap: 8px; }
+    .ohm-search-container { min-width: 100%; }
+}
+
+/* Loader */
+.ohm-state-msg {
+    padding: 40px 20px; text-align: center; color: var(--text-secondary);
+    background-color: var(--surface-color); border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-color); grid-column: 1 / -1;
+}
+.ohm-loader { width: 32px; height: 32px; border: 3px solid rgba(0,0,0,0.08); border-top-color: #000; border-radius: 50%; animation: ohm-spin 1s linear infinite; margin: 0 auto 16px; display: none;}
+.ohm-hybrid-layout.loading .ohm-loader { display: block; }
+@keyframes ohm-spin { to { transform: rotate(360deg); } }
+
+/* submit toggle button */
+.ohm-submit-toggle-btn {
+    background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);
+    padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: var(--transition); font-family: var(--font-family);
+}
+.ohm-submit-toggle-btn:hover { background: var(--glass-hover); }
+
+.ohm-submit-modal {
+    background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+    padding: 28px; display: none; flex-direction: column; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1000; width: 100%; max-width: 1000px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15);
+}
+@media (max-width: 1000px) {
+    .ohm-submit-modal { max-width: 90vw; padding: 20px; }
+}
+.ohm-submit-modal.open { display: flex; }
+.ohm-submit-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.ohm-submit-header p { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; }
+.ohm-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .ohm-form-grid { grid-template-columns: 1fr 1fr; gap: 12px; } }
+@media (max-width: 600px) { .ohm-form-grid { grid-template-columns: 1fr; gap: 10px; } }
+.ohm-form-group.full-width { grid-column: 1 / -1; }
+.ohm-form-group.span-2 { grid-column: span 2; }
+@media (max-width: 900px) { .ohm-form-group.span-2 { grid-column: 1 / -1; } }
+.ohm-form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.ohm-form-input, .ohm-form-select, .ohm-form-textarea {
+    width: 100%; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 10px 12px;
+    border-radius: var(--radius-sm); color: #000; font-family: inherit; font-size: 14px; outline: none; transition: var(--transition); min-height: 40px; box-sizing: border-box;
+}
+.ohm-form-input:focus, .ohm-form-select:focus, .ohm-form-textarea:focus { border-color: var(--border-hover); background: rgba(0,0,0,0.05); box-shadow: 0 0 0 3px rgba(0,0,0,0.01); }
+.ohm-form-textarea { resize: vertical; min-height: 80px; }
+.ohm-form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+.ohm-form-select option { background-color: var(--surface-color); color: #000; }
+.ohm-form-input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: none; cursor: pointer; }
+.ohm-btn-submit { width: 100%; background: var(--text-primary); color: #fff; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); margin-top: 16px; }
+.ohm-btn-submit:hover { opacity: 0.9; }
+.ohm-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+#ohm-status-msg { margin-top: 16px; font-size: 13px; text-align: center; display: none; padding: 10px; border-radius: var(--radius-sm); }
+#ohm-status-msg.success { display: block; background: rgba(0, 255, 136, 0.05); color: #00aa66; border: 1px solid rgba(0, 255, 136, 0.1); }
+#ohm-status-msg.error { display: block; background: rgba(255, 71, 87, 0.05); color: #cc3344; border: 1px solid rgba(255, 71, 87, 0.1); }
+
+.ohm-success-modal {
+    background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+    padding: 40px; display: none; flex-direction: column; align-items: center; text-align: center;
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1100; width: 90%; max-width: 400px; box-shadow: 0 32px 64px rgba(0,0,0,0.15);
+}
+.ohm-success-modal.open { display: flex; }
+.ohm-success-icon { width: 64px; height: 64px; background: rgba(0, 255, 136, 0.1); color: #00aa66; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.ohm-success-icon svg { width: 32px; height: 32px; fill: currentColor; }
+
+/* Map Extensions */
+.leaflet-container { background-color: #f9f9f9; font-family: var(--font-family); }
+.leaflet-bar a { background-color: var(--surface-color) !important; color: #000 !important; border-color: var(--border-color) !important; }
+.leaflet-bar a:hover { background-color: var(--border-hover) !important; }
+
+.ohm-map-tooltip {
+    background-color: var(--surface-color); border: 1px solid var(--border-color);
+    color: #000; border-radius: 6px; padding: 5px 10px; font-weight: 500; font-size: 13px;
+}
+.leaflet-tooltip-left.ohm-map-tooltip::before { border-left-color: var(--border-color); }
+.leaflet-tooltip-right.ohm-map-tooltip::before { border-right-color: var(--border-color); }
+.leaflet-tooltip-top.ohm-map-tooltip::before { border-top-color: var(--border-color); }
+.leaflet-tooltip-bottom.ohm-map-tooltip::before { border-bottom-color: var(--border-color); }
+
+.ohm-custom-marker {
+    background-color: transparent; border: none; border-radius: 0;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTE4OCIgaGVpZ2h0PSI5MTgiIHZpZXdCb3g9IjAgMCAxMTg4IDkxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNOS4yMjM4OCA2NzIuNDAyQy0xOS41MzYxIDc1MS40MTIgMjEuMjAzOSA4MzguNzYyIDEwMC4yMTQgODY3LjUyMkMxMTcuNDA0IDg3My43NzIgMTM0Ljk4NCA4NzYuNzQyIDE1Mi4yNzQgODc2Ljc0MkMyMTMuNzk0IDg3Ni43NDIgMjcxLjU3NCA4MzkuMTcyIDI5NC41ODQgNzc4LjUyMkw0NDcuODU0IDM2MC41NzJDNDYwLjE5NCAzMjYuOTEyIDQ5Mi4yMzQgMzA0LjU0MiA1MjguMDg0IDMwNC45NDJINjU5LjUyNEM2OTUuMzc0IDMwNC41NDIgNzI3LjQxNCAzMjYuOTIyIDczOS43NTQgMzYwLjU3Mkw4OTMuMDI0IDc3OC41MjJDOTE2LjAzNCA4MzkuMTgyIDk3My44MjQgODc2Ljc0MiAxMDM1LjMzIDg3Ni43NDJDMTA1Mi42Mi 83Ni43NDIgMTA3MC4yIDg3My43NzIgMTA4Ny4zOSA4NjcuNTIyQzExNjYuNCA4MzguNzYyIDEyMDcuMTQgNzUxLjQxMiAxMTc4LjM4IDY3Mi40MDJMOTcwLjExNCAxMDAuMjAyQzk0Ny41MTQgMzguMTEyMiA4ODguNzI0IC0wLjMzNzc2NCA4MjYuMjQ0IDAuMDAyMjM2MzlIMzYxLjM1NEMyOTguODc0IC0wLjMzNzc2NCAyNDAuMDg0IDM4LjEyMjIgMjE3LjQ4NCAxMDAuMjAyTDkuMjEzODcgNjcyLjQwMkg5LjIyMzg4WiIgZmlsbD0iYmxhY2siLz48L3N2Zz4=');
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+}
+
+.leaflet-popup-content-wrapper { background: transparent; box-shadow: none; padding: 0; }
+.leaflet-popup-content { margin: 0; width: 280px !important; }
+.leaflet-popup-tip-container { display: none; }
+.leaflet-popup-close-button { color: #000 !important; text-shadow: 0 0 4px #fff; right: 8px !important; top: 8px !important; font-size: 20px !important; z-index: 100;}
+.ohm-map-card {
+    background-color: rgba(255, 255, 255, 0.85) !important; 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important; 
+    border-radius: 12px;
+}
+.ohm-donate-callout {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    text-align: center;
+    color: #000000;
+    margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+.ohm-donate-callout a {
+    color: #000000;
+    text-decoration: underline !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.ohm-donate-callout a:hover {
+    opacity: 0.8;
+}
+</style>
+
+<div class="ohm-donate-callout">
+    Support the work of OHM. <a href="https://www.gofundme.com/f/build-a-long-lasting-infrastructure-for-the-electronic-arts?lang=en_US" target="_blank">Donate here.</a>
+</div>
+<div class="ohm-hybrid-layout" id="ohm-hybrid-layout">
+    <!-- Calendar Component Modal -->
+    <div class="ohm-modal-backdrop" id="ohm-calendar-backdrop"></div>
+    
+    <div class="ohm-submit-modal" id="ohm-submit-modal">
+        <div class="ohm-submit-header">
+            <h2 style="margin: 0 0 8px 0; font-size: 22px;">Submit an Event</h2>
+            <p>Fill out the details below. Our team will review and publish it shortly.</p>
+        </div>
+        <form id="ohm-submit-form">
+            <div class="ohm-form-grid">
+                <div class="ohm-form-group span-2">
+                    <label for="ohm_email">Submitter Email</label>
+                    <input type="email" id="ohm_email" class="ohm-form-input" required placeholder="your@email.com">
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_tag">Tag</label>
+                    <select id="ohm_tag" class="ohm-form-select">
+                        <option value="Music">Music</option>
+                        <option value="Art">Art</option>
+                        <option value="Workshop">Workshop</option>
+                        <option value="Community">Community</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="ohm-form-group span-2">
+                    <label for="ohm_title">Event Title</label>
+                    <input type="text" id="ohm_title" class="ohm-form-input" required placeholder="e.g. Techno Night Volume 1">
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_image_upload">Flyer / Image (Required)</label>
+                    <input type="file" id="ohm_image_upload" class="ohm-form-input" accept="image/*" required>
+                </div>
+                <div class="ohm-form-group">
+                    <label>Start Date & Time</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="ohm_start_date" class="ohm-form-input" required style="flex: 1.5;">
+                        <select id="ohm_start_time_select" class="ohm-form-select" required style="flex: 1;"></select>
+                    </div>
+                </div>
+                <div class="ohm-form-group">
+                    <label>End Date & Time</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="ohm_end_date" class="ohm-form-input" style="flex: 1.5;">
+                        <select id="ohm_end_time_select" class="ohm-form-select" style="flex: 1;">
+                            <option value="">No end</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_location_name">Venue Name</label>
+                    <input type="text" id="ohm_location_name" class="ohm-form-input" placeholder="e.g. Empire Underground" required>
+                </div>
+                <div class="ohm-form-group span-2">
+                    <label for="ohm_address">Full Address</label>
+                    <input type="text" id="ohm_address" class="ohm-form-input" placeholder="93 N Pearl St, Albany, NY">
+                </div>
+                <div class="ohm-form-group">
+                    <label for="ohm_ticket_url">Ticket URL (Optional)</label>
+                    <input type="url" id="ohm_ticket_url" class="ohm-form-input" placeholder="https://eventbrite.com/...">
+                </div>
+                <div class="ohm-form-group full-width">
+                    <label for="ohm_description">Description</label>
+                    <textarea id="ohm_description" class="ohm-form-textarea" rows="4" placeholder="Deep dark techno event..."></textarea>
+                </div>
+            </div>
+            <button type="submit" class="ohm-btn-submit" id="ohm-submit-btn">Submit for Review</button>
+            <div id="ohm-status-msg"></div>
+        </form>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="ohm-success-modal" id="ohm-success-modal">
+        <div class="ohm-success-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h2 style="margin: 0 0 12px 0; font-size: 24px;">Success!</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 15px; line-height: 1.5;">Your event has been submitted for review. It will appear on the calendar once approved.</p>
+        <button class="ohm-btn-submit" id="ohm-success-close" style="margin-top: 0; width: auto; padding-left: 40px; padding-right: 40px;">Got it</button>
+    </div>
+
+    <div class="ohm-calendar-widget" id="ohm-calendar">
+        <div class="ohm-calendar-header">
+            <div class="ohm-calendar-title" id="ohm-month-year">Month Year</div>
+            <div class="ohm-nav-btns">
+                <button class="ohm-icon-btn" id="ohm-prev" aria-label="Previous Month">
+                    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+                <button class="ohm-icon-btn" id="ohm-next" aria-label="Next Month">
+                    <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="ohm-weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="ohm-days-grid" id="ohm-calendar-grid"></div>
+    </div>
+
+    <!-- Cards Component -->
+    <div class="ohm-cards-widget" id="ohm-cards-container">
+        <div class="ohm-cards-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                 <div class="ohm-cards-title" id="ohm-view-title">Upcoming Events</div>
+                 <div class="ohm-loader" style="width: 20px; height: 20px; border-width: 2px; margin: 0; display: none;" id="ohm-cards-loader"></div>
+             </div>
+            <button class="ohm-submit-toggle-btn" id="ohm-submit-toggle">Submit an Event</button>
+        </div>
+        <div class="ohm-cards-filters">
+            <div class="ohm-filter-btns">
+                <button class="ohm-filter-btn active" data-filter="upcoming">Upcoming</button>
+                <button class="ohm-filter-btn" data-filter="archived">Archived Events</button>
+                <button class="ohm-filter-btn" id="ohm-calendar-toggle" data-filter="calendar_date" title="Pick a Date...">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                </button>
+                <button class="ohm-filter-btn" id="ohm-map-toggle" data-filter="map" title="Map View">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+                </button>
+            </div>
+            <div class="ohm-search-container">
+                <svg class="ohm-search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" class="ohm-search-input" id="ohm-search" placeholder="Search events..." autocomplete="off">
+            </div>
+        </div>
+        <div class="ohm-cards-grid" id="ohm-cards-grid">
+            <div class="ohm-state-msg"><div class="ohm-loader" style="display:block;"></div><p>Loading events...</p></div>
+        </div>
+        <div id="ohm-map-container" style="display: none; width: 100%; height: 500px; border-radius: var(--radius-lg); background-color: var(--surface-color); z-index: 1;"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function() {
+    'use strict';
+    // CONFIG REQUIRED: Update these keys
+    const SUPABASE_URL = 'https://pcutqzebmgiorfrajgcl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdXRxemVibWdpb3JmcmFqZ2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTEyOTIsImV4cCI6MjA4ODkyNzI5Mn0.tOjrxRSG6WXL5jZWoRYJgg9SbKeExwd1Cq_v1v_ld0k';
+    const USE_REAL_SUPABASE = true; 
+
+    // Calendar Elements
+    const calGrid = document.getElementById('ohm-calendar-grid');
+    const monthYear = document.getElementById('ohm-month-year');
+    const calendarWidget = document.getElementById('ohm-calendar');
+    const calendarBackdrop = document.getElementById('ohm-calendar-backdrop');
+    const calendarToggleBtn = document.getElementById('ohm-calendar-toggle');
+    let displayMonthDate = new Date();
+    
+    // Cards Elements
+    const cardsGrid = document.getElementById('ohm-cards-grid');
+    const titleEl = document.getElementById('ohm-view-title');
+    const searchInput = document.getElementById('ohm-search');
+    const filterBtns = document.querySelectorAll('.ohm-filter-btn');
+    const loader = document.getElementById('ohm-cards-loader');
+    
+    // Map Elements
+    const mapContainer = document.getElementById('ohm-map-container');
+    const mapToggleBtn = document.getElementById('ohm-map-toggle');
+    let leafletMap = null;
+    let leafletMarkers = [];
+
+    let allEvents = [];
+    let currentFilter = 'upcoming'; 
+    
+    // Read the view mode from the container's data attribute, defaulting to 'ohm'
+    const layoutEl = document.getElementById('ohm-hybrid-layout');
+    const containerEl = layoutEl ? layoutEl.parentElement : null;
+    let currentViewMode = (containerEl && containerEl.getAttribute('data-view-mode')) ? containerEl.getAttribute('data-view-mode') : 'all';
+    console.log("[OHM Debug] Resolved currentViewMode:", currentViewMode, "from containerEl:", containerEl);
+    
+    let searchQuery = '';
+    let selectedDateFilter = null; // Stored as "YYYY-MM-DD"
+    
+    let archiveFetched = false;
+
+
+    async function fetchArchiveEvents() {
+        loader.style.display = 'block';
+        if (!USE_REAL_SUPABASE) {
+            allEvents.push({
+                id: 'mock-archive-1',
+                title: 'Past Event: The Beginning', description: 'This is a test archived event.',
+                start_time: new Date(Date.now() - 30 * 86400000).toISOString(), location_name: 'Archive Hall', address: '123 Old St',
+                tag: 'Community', lat: 42.6600, lng: -73.7600
+            });
+            allEvents.forEach(e => { e._dateObj = new Date(e.start_time); });
+            allEvents.sort((a,b) => a._dateObj - b._dateObj);
+            archiveFetched = true;
+            loader.style.display = 'none';
+            applyFilters();
+            return;
+        }
+
+        try {
+            const nowISO = new Date().toISOString();
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=lt.${nowISO}&order=start_time.desc&limit=100`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            if(response.ok) {
+                const fetchedEvents = await response.json();
+                fetchedEvents.forEach(fe => {
+                    if (!allEvents.find(e => e.id === fe.id)) {
+                        fe._dateObj = new Date(fe.start_time);
+                        allEvents.push(fe);
+                    }
+                });
+                allEvents.sort((a,b) => a._dateObj - b._dateObj);
+                archiveFetched = true;
+            }
+        } catch(e) { console.error('Error fetching archive:', e); } finally {
+            loader.style.display = 'none';
+            applyFilters();
+        }
+    }
+
+    async function fetchEvents() {
+        loader.style.display = 'block';
+        if (!USE_REAL_SUPABASE) {
+            allEvents = [
+                {
+                    title: 'Techno Night: Volume 1', description: 'Deep dark techno event running until early morning.',
+                    start_time: new Date().toISOString(), location_name: 'Empire Underground', address: '93 N Pearl St, Albany, NY 12207',
+                    image_url: 'https://images.unsplash.com/photo-1571266028243-cb40fce7573f?q=80&w=600&auto=format&fit=crop', 
+                    tag: 'Music', lat: 42.6526, lng: -73.7562
+                },
+                {
+                    title: 'DRUM & BASS: The Movement', description: 'Documentary screening & sets.',
+                    start_time: new Date(Date.now() + 86400000).toISOString(), location_name: 'Alias Coffee', address: '76 N Pearl St, Albany, NY 12207',
+                    image_url: 'https://images.unsplash.com/photo-1598387181032-a3103ea27146?q=80&w=600&auto=format&fit=crop', 
+                    tag: 'Art / Music', lat: 42.6644, lng: -73.7547
+                }
+            ];
+            setTimeout(() => {
+                loader.style.display = 'none';
+                allEvents.forEach(e => { e._dateObj = new Date(e.start_time); });
+                renderCalendar();
+                applyFilters();
+            }, 500);
+            return;
+        }
+
+        try {
+            // Fetch events from the start of the current displayed month
+            const fetchStart = new Date(displayMonthDate.getFullYear(), displayMonthDate.getMonth(), 1);
+            
+            // To be comprehensive, fetch up to 200 events starting from the month viewing
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*,ticket_url,address&start_time=gte.${fetchStart.toISOString()}&order=start_time.asc&limit=200`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            if(response.ok) {
+                const fetchedEvents = await response.json();
+                
+                // Merge without duplicating (in case we fetch overlapping ranges)
+                fetchedEvents.forEach(fe => {
+                    if (!allEvents.find(e => e.id === fe.id)) {
+                        fe._dateObj = new Date(fe.start_time);
+                        allEvents.push(fe);
+                    }
+                });
+                
+                // Resort everything
+                allEvents.sort((a,b) => a._dateObj - b._dateObj);
+            }
+            
+            // Check if there are any events for the current view mode
+            let viewEvents = allEvents.filter(e => e.status !== 'pending');
+            if (currentViewMode === 'ohm') {
+                viewEvents = viewEvents.filter(e => !e.email);
+            }
+            if (viewEvents.length === 0) {
+                if (containerEl) containerEl.style.display = 'none';
+                return;
+            } else {
+                if (containerEl) containerEl.style.display = '';
+            }
+
+            renderCalendar();
+            applyFilters();
+        } catch(e) { 
+            console.error("Hybrid Widget err:", e);
+            cardsGrid.innerHTML = `<div class="ohm-state-msg"><p>Failed to load events.</p></div>`;
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    // ========== CALENDAR LOGIC ==========
+    function renderCalendar() {
+        calGrid.innerHTML = '';
+        const year = displayMonthDate.getFullYear();
+        const month = displayMonthDate.getMonth();
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        monthYear.textContent = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+        const today = new Date();
+        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+        for (let i = 0; i < 42; i++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'ohm-day';
+
+            if (i < firstDay) {
+                dayEl.textContent = daysInPrevMonth - firstDay + i + 1;
+                dayEl.classList.add('other-month');
+            } else if (i >= firstDay && i < firstDay + daysInMonth) {
+                const dayNum = i - firstDay + 1;
+                dayEl.textContent = dayNum;
+                dayEl.classList.add('active-month');
+                
+                if (isCurrentMonth && dayNum === today.getDate()) {
+                    dayEl.classList.add('today');
+                }
+
+                const cellDateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+                dayEl.dataset.date = cellDateStr;
+                
+                // Check if this date has events
+                const hasEvent = allEvents.some(e => {
+                    if (e.status === 'pending') return false;
+                    if (currentViewMode === 'ohm' && e.email) return false;
+                    return e._dateObj.getFullYear() === year && e._dateObj.getMonth() === month && e._dateObj.getDate() === dayNum;
+                });
+                
+                if (hasEvent) {
+                    dayEl.classList.add('has-events');
+                    
+                    if (selectedDateFilter === cellDateStr) dayEl.classList.add('selected');
+
+                    dayEl.addEventListener('click', () => {
+                        if (selectedDateFilter === cellDateStr) {
+                            selectedDateFilter = null;
+                            dayEl.classList.remove('selected');
+                            currentFilter = 'upcoming'; 
+                            updateFilterButtonsUI();
+                        } else {
+                            filterBtns.forEach(b => b.classList.remove('active'));
+                            currentFilter = 'calendar_date';
+                            selectedDateFilter = cellDateStr;
+                            
+                            document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+                            dayEl.classList.add('selected');
+                            
+                            const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+                            titleEl.textContent = formatter.format(new Date(year, month, dayNum));
+                        }
+                        applyFilters();
+                        calendarWidget.classList.remove('open');
+                        calendarBackdrop.classList.remove('open');
+                    });
+                } else {
+                    dayEl.classList.add('disabled');
+                }
+
+            } else {
+                dayEl.textContent = i - firstDay - daysInMonth + 1;
+                dayEl.classList.add('other-month');
+            }
+            calGrid.appendChild(dayEl);
+        }
+    }
+
+    document.getElementById('ohm-prev').addEventListener('click', () => {
+        displayMonthDate.setMonth(displayMonthDate.getMonth() - 1);
+        fetchEvents(); 
+    });
+    
+    document.getElementById('ohm-next').addEventListener('click', () => {
+        displayMonthDate.setMonth(displayMonthDate.getMonth() + 1);
+        fetchEvents();
+    });
+
+    // Calendar Modal Toggling
+    calendarToggleBtn.addEventListener('click', () => {
+        calendarWidget.classList.toggle('open');
+        calendarBackdrop.classList.toggle('open');
+    });
+    calendarBackdrop.addEventListener('click', () => {
+        calendarWidget.classList.remove('open');
+        calendarBackdrop.classList.remove('open');
+    });
+
+    // ========== CARDS LOGIC ==========
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        applyFilters();
+    });
+
+    function updateFilterButtonsUI() {
+        filterBtns.forEach(btn => {
+            if (btn.id === 'ohm-calendar-toggle') {
+                if (currentFilter === 'calendar_date') btn.classList.add('active');
+                else btn.classList.remove('active');
+            } else if (btn.id === 'ohm-map-toggle') {
+                if (currentFilter === 'map') btn.classList.add('active');
+                else btn.classList.remove('active');
+            } else if (btn.getAttribute('data-filter') === currentFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        let prefix = currentViewMode === 'ohm' ? "OHM " : "All ";
+        if (currentFilter === 'upcoming') titleEl.textContent = prefix + "Upcoming Events";
+        if (currentFilter === 'today') titleEl.textContent = prefix + "Today's Events";
+        if (currentFilter === 'archived') titleEl.textContent = prefix + "Archived Events";
+        if (currentFilter === 'map') titleEl.textContent = prefix + "Map View";
+        
+        if (currentFilter !== 'map') {
+            cardsGrid.style.display = ''; 
+            mapContainer.style.display = 'none';
+        } else {
+            cardsGrid.style.display = 'none';
+            mapContainer.style.display = 'block';
+            if (leafletMap) {
+                setTimeout(() => leafletMap.invalidateSize(), 10);
+            }
+        }
+    }
+
+    filterBtns.forEach(btn => {
+            if (btn.id === 'ohm-calendar-toggle' || btn.id === 'ohm-map-toggle') return;
+            
+            btn.addEventListener('click', async () => {
+                currentFilter = btn.getAttribute('data-filter');
+                selectedDateFilter = null; // Clear calendar selection
+                document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+                
+                updateFilterButtonsUI();
+                if (currentFilter === 'archived' && !archiveFetched) {
+                    await fetchArchiveEvents();
+                } else {
+                    applyFilters();
+                }
+            });
+        });
+
+    if (mapToggleBtn) {
+        mapToggleBtn.addEventListener('click', () => {
+            if (currentFilter !== 'map') {
+                currentFilter = 'map';
+                selectedDateFilter = null;
+                document.querySelectorAll('.ohm-day.selected').forEach(el => el.classList.remove('selected'));
+                updateFilterButtonsUI();
+
+                if (!leafletMap) {
+                    initMap();
+                } else {
+                    leafletMap.invalidateSize();
+                }
+                applyFilters();
+            }
+        });
+    }
+
+    function initMap() {
+        leafletMap = L.map('ohm-map-container', { zoomControl: false }).setView([42.6526, -73.7562], 12);
+        L.control.zoom({ position: 'topright' }).addTo(leafletMap);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 20
+        }).addTo(leafletMap);
+    }
+
+    function applyFilters() {
+        // Base filter: must not be pending
+        let filtered = allEvents.filter(e => e.status !== 'pending');
+        console.log("[OHM Debug] applyFilters starting. total events:", allEvents.length, "non-pending:", filtered.length);
+
+        // View Mode Filter: OHM only vs All
+        if (currentViewMode === 'ohm') {
+            // "OHM Events" = events created without an email (internal admin creation)
+            filtered = filtered.filter(e => !e.email);
+            console.log("[OHM Debug] ohm mode. events remaining after email check:", filtered.length);
+        }
+
+        const upcomingThreshold = new Date();
+        upcomingThreshold.setHours(0,0,0,0);
+        
+        if (currentFilter === 'calendar_date' && selectedDateFilter) {
+            const [y, m, d] = selectedDateFilter.split('-').map(Number);
+            filtered = filtered.filter(e => e._dateObj.getFullYear() === y && 
+                                            e._dateObj.getMonth() === m - 1 && 
+                                            e._dateObj.getDate() === d);
+        } else if (currentFilter === 'upcoming' || currentFilter === 'map') {
+            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold);
+        } else if (currentFilter === 'today') {
+            const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(e => e._dateObj >= upcomingThreshold && e._dateObj <= todayEnd);
+        } else if (currentFilter === 'archived') {
+            filtered = filtered.filter(e => e._dateObj < upcomingThreshold);
+        }
+
+        if (searchQuery) {
+            filtered = filtered.filter(e => {
+                const q = searchQuery;
+                const matchTitle = e.title && e.title.toLowerCase().includes(q);
+                const matchLocation = e.location_name && e.location_name.toLowerCase().includes(q);
+                const matchDesc = e.description && e.description.toLowerCase().includes(q);
+                return matchTitle || matchLocation || matchDesc;
+            });
+        }
+
+        if (currentFilter === 'map') {
+            console.log("[OHM Debug] Rendering map with events:", filtered.length, filtered);
+            renderMap(filtered);
+        } else {
+            console.log("[OHM Debug] Rendering cards with events:", filtered.length, filtered);
+            renderCards(filtered);
+        }
+    }
+
+    function renderMap(events) {
+        if (!leafletMap) return;
+        
+        leafletMarkers.forEach(m => leafletMap.removeLayer(m));
+        leafletMarkers = [];
+        
+        const bounds = L.latLngBounds();
+        const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formatterTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+        const mapEvents = events.filter(e => e.lat && e.lng);
+        if (mapEvents.length === 0) return;
+
+        mapEvents.forEach(event => {
+            const customIcon = L.divIcon({ className: 'ohm-custom-marker', iconSize: [22, 16], iconAnchor: [11, 8] });
+            
+            let timeString = '';
+            if (event.start_time) {
+                const dateStr = formatterDate.format(event._dateObj);
+                const startTimeStr = formatterTime.format(event._dateObj);
+                timeString = `${dateStr} • ${startTimeStr}`;
+                if (event.end_time) {
+                    const endTimeStr = formatterTime.format(new Date(event.end_time));
+                    timeString += ` - ${endTimeStr}`;
+                }
+            }
+
+            let locationString = event.location_name || '';
+            if (event.address) {
+                 locationString += locationString ? `<br><span style="color:#888; font-size:12px;">${event.address}</span>` : event.address;
+            }
+
+            const cardHtml = `
+            <div class="ohm-card ohm-map-card">
+                <div class="ohm-card-content">
+                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
+                    <h3 class="ohm-card-title">${event.title}</h3>
+                    ${timeString ? `
+                    <div class="ohm-card-meta">
+                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                        <div>${timeString}</div>
+                    </div>` : ''}
+                    ${locationString ? `
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <div>${locationString}</div>
+                    </a>` : ''}
+                    ${event.description ? `<div class="ohm-card-desc">${event.description}</div>` : '<div style="flex-grow:1;"></div>'}
+                    ${event.ticket_url ? `
+                    <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
+                        Get Tickets
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </a>
+                    ` : ''}
+                </div>
+            </div>`;
+
+            const marker = L.marker([event.lat, event.lng], { icon: customIcon })
+                .addTo(leafletMap)
+                .bindTooltip(`<div class="ohm-map-tooltip">${event.title}</div>`, { direction: 'top', offset: [0, -10], opacity: 1 })
+                .bindPopup(cardHtml, { autoPanPadding: [20, 20] });
+            
+            leafletMarkers.push(marker);
+            bounds.extend([event.lat, event.lng]);
+        });
+
+        setTimeout(() => { 
+            if(leafletMap && mapEvents.length > 0) {
+                leafletMap.invalidateSize(); 
+                leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 }); 
+            }
+        }, 100);
+    }
+
+    function renderCards(events) {
+        cardsGrid.innerHTML = '';
+
+        if (events.length === 0) {
+            cardsGrid.innerHTML = `<div class="ohm-state-msg"><p>No events found for this selection.</p></div>`;
+            return;
+        }
+
+        const formatterDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formatterTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+        events.forEach(event => {
+            const card = document.createElement('div');
+            card.className = 'ohm-card';
+            
+            const dateStr = formatterDate.format(event._dateObj);
+            const startTimeStr = formatterTime.format(event._dateObj);
+            let timeString = `${dateStr} • ${startTimeStr}`;
+            
+            if (event.end_time) {
+                const endTimeStr = formatterTime.format(new Date(event.end_time));
+                timeString += ` - ${endTimeStr}`;
+            }
+
+            let locationString = event.location_name || '';
+            if (event.address) {
+                 locationString += locationString ? `<br><span style="color:#888; font-size:12px;">${event.address}</span>` : event.address;
+            }
+
+            card.innerHTML = `
+                ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="ohm-card-img" loading="lazy">` : `<div class="ohm-card-img"></div>`}
+                <div class="ohm-card-content">
+                    ${event.tag ? `<div class="ohm-card-tag">${event.tag}</div>` : ''}
+                    <h3 class="ohm-card-title">${event.title}</h3>
+                    <div class="ohm-card-meta">
+                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                        <div>${timeString}</div>
+                    </div>
+                    ${locationString ? `
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((event.lat && event.lng) ? `${event.lat},${event.lng}` : (event.address || event.location_name))}" target="_blank" class="ohm-card-meta" style="text-decoration: underline; color: inherit;">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <div>${locationString}</div>
+                    </a>` : ''}
+                    ${event.description ? `
+                        <div class="ohm-card-desc">${event.description}</div>
+                        <div class="ohm-read-more">Read More</div>
+                    ` : '<div style="flex-grow:1;"></div>'}
+                    ${event.ticket_url ? `
+                    <a href="${event.ticket_url}" target="_blank" rel="noopener noreferrer" class="ohm-ticket-btn">
+                        Get Tickets
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </a>
+                    ` : ''}
+                </div>
+            `;
+            cardsGrid.appendChild(card);
+        });
+
+        // After rendering, detect if truncation is happening and show Read More
+        setTimeout(() => {
+            document.querySelectorAll('.ohm-card').forEach(card => {
+                const desc = card.querySelector('.ohm-card-desc');
+                const btn = card.querySelector('.ohm-read-more');
+                if (desc && btn) {
+                    if (desc.scrollHeight > desc.clientHeight) {
+                        btn.style.display = 'block';
+                    }
+                }
+            });
+        }, 50);
+    }
+
+    // Toggle Read More (Global delegation to cover grid and map popups)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ohm-read-more')) {
+            const btn = e.target;
+            const desc = btn.previousElementSibling;
+            if (desc && desc.classList.contains('ohm-card-desc')) {
+                const isExpanded = desc.classList.toggle('expanded');
+                btn.textContent = isExpanded ? 'Read Less' : 'Read More';
+                
+                // If it's in a map popup, we might need to update the popup position
+                if (btn.closest('.leaflet-popup-content')) {
+                    const popup = leafletMap._popup;
+                    if (popup) popup.update();
+                }
+            }
+        }
+    });
+
+    // Detect truncation in map popups
+    if (leafletMap) {
+        leafletMap.on('popupopen', (e) => {
+            const container = e.popup._container;
+            const desc = container.querySelector('.ohm-card-desc');
+            const btn = container.querySelector('.ohm-read-more');
+            if (desc && btn) {
+                if (desc.scrollHeight > desc.clientHeight) {
+                    btn.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // ========== SUBMIT MODAL LOGIC ==========
+    const submitToggleBtn = document.getElementById('ohm-submit-toggle');
+    const submitModal = document.getElementById('ohm-submit-modal');
+    const successModal = document.getElementById('ohm-success-modal');
+    const successCloseBtn = document.getElementById('ohm-success-close');
+    
+    if (submitToggleBtn) {
+        submitToggleBtn.addEventListener('click', () => {
+            submitModal.classList.add('open');
+            calendarBackdrop.classList.add('open');
+            calendarWidget.classList.remove('open'); // close calendar if open
+        });
+    }
+    
+    // update backdrop click to cover submit modal too
+    calendarBackdrop.addEventListener('click', () => {
+        submitModal.classList.remove('open');
+        successModal.classList.remove('open');
+    });
+
+    if (successCloseBtn) {
+        successCloseBtn.addEventListener('click', () => {
+            successModal.classList.remove('open');
+            calendarBackdrop.classList.remove('open');
+        });
+    }
+
+    let _supabaseClient = null;
+    function getSupabase() {
+        if (!_supabaseClient && typeof supabase !== 'undefined') {
+            _supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        return _supabaseClient;
+    }
+
+    function initSubDefaults() {
+        const now = new Date();
+        const defaultStart = new Date(now);
+        defaultStart.setHours(19, 0, 0, 0);
+        if (now > defaultStart) defaultStart.setDate(defaultStart.getDate() + 1);
+        
+        const defaultEnd = new Date(defaultStart);
+        defaultEnd.setHours(21, 0, 0, 0);
+        
+        const startInput = document.getElementById('ohm_start_date');
+        if (startInput) {
+            startInput.value = defaultStart.toISOString().split('T')[0];
+            document.getElementById('ohm_start_time_select').value = "19:00";
+            document.getElementById('ohm_end_date').value = defaultEnd.toISOString().split('T')[0];
+            document.getElementById('ohm_end_time_select').value = "21:00";
+        }
+    }
+
+    function populateSubTimeSelects() {
+        const selects = [document.getElementById('ohm_start_time_select'), document.getElementById('ohm_end_time_select')];
+        if (!selects[0]) return;
+        selects.forEach((select, idx) => {
+            const currentVal = select.value;
+            select.innerHTML = idx === 1 ? '<option value="">No end time</option>' : '';
+            for (let h = 0; h < 24; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    const HH = h.toString().padStart(2, '0');
+                    const mm = m.toString().padStart(2, '0');
+                    const label = new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    const option = document.createElement('option');
+                    option.value = `${HH}:${mm}`;
+                    option.textContent = label;
+                    select.appendChild(option);
+                }
+            }
+            if (currentVal) select.value = currentVal;
+        });
+    }
+
+    populateSubTimeSelects();
+    initSubDefaults();
+
+    const startDateInput = document.getElementById('ohm_start_date');
+    if (startDateInput) {
+        startDateInput.addEventListener('change', (e) => {
+            const endDateInput = document.getElementById('ohm_end_date');
+            if (e.target.value && (!endDateInput.value || endDateInput.value < e.target.value)) {
+                endDateInput.value = e.target.value;
+            }
+        });
+    }
+
+    const submitForm = document.getElementById('ohm-submit-form');
+    if (submitForm) {
+        submitForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const client = getSupabase();
+            if (!client) { alert('Supabase client not loaded! Please check your connection or script tags.'); return; }
+            
+            const btn = document.getElementById('ohm-submit-btn');
+            const msg = document.getElementById('ohm-status-msg');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            msg.style.display = 'none';
+            msg.className = '';
+
+            try {
+                const fileInput = document.getElementById('ohm_image_upload');
+                const file = fileInput.files[0];
+                let image_url = null;
+
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                    const filePath = `flyers/${fileName}`;
+                    const { error: uploadError } = await client.storage.from('event-images').upload(filePath, file);
+                    if (uploadError) throw new Error('Upload error: ' + uploadError.message);
+                    const { data: { publicUrl } } = client.storage.from('event-images').getPublicUrl(filePath);
+                    image_url = publicUrl;
+                }
+
+                const addressVal = document.getElementById('ohm_address').value;
+                const locationVal = document.getElementById('ohm_location_name').value;
+                let lat = null;
+                let lng = null;
+
+                if (addressVal || locationVal) {
+                    try {
+                        const query = encodeURIComponent(addressVal ? addressVal : locationVal);
+                        const geoResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+                        if (geoResp.ok) {
+                            const data = await geoResp.json();
+                            if (data && data.length > 0) {
+                                lat = parseFloat(data[0].lat);
+                                lng = parseFloat(data[0].lon);
+                            }
+                        }
+                    } catch (geoErr) {
+                        console.warn("Geocoding failed:", geoErr);
+                    }
+                }
+
+                const startDt = new Date(`${document.getElementById('ohm_start_date').value}T${document.getElementById('ohm_start_time_select').value}:00`);
+                const endDtStr = (document.getElementById('ohm_end_date').value && document.getElementById('ohm_end_time_select').value) ? `${document.getElementById('ohm_end_date').value}T${document.getElementById('ohm_end_time_select').value}:00` : null;
+                const endDt = endDtStr ? new Date(endDtStr) : null;
+
+                const eventData = {
+                    email: document.getElementById('ohm_email').value,
+                    title: document.getElementById('ohm_title').value,
+                    tag: document.getElementById('ohm_tag').value,
+                    image_url: image_url,
+                    start_time: startDt.toISOString(),
+                    end_time: endDt ? endDt.toISOString() : null,
+                    location_name: locationVal,
+                    address: addressVal || null,
+                    description: document.getElementById('ohm_description').value || null,
+                    ticket_url: document.getElementById('ohm_ticket_url').value || null,
+                    status: 'pending',
+                    lat: lat,
+                    lng: lng
+                };
+
+                const { error } = await client.from('events').insert([eventData]);
+                if (error) throw error;
+
+                // Show success modal
+                submitModal.classList.remove('open');
+                successModal.classList.add('open');
+                
+                submitForm.reset();
+                initSubDefaults();
+            } catch (err) {
+                console.error(err);
+                msg.textContent = 'Error: ' + err.message;
+                msg.className = 'error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit for Review';
+            }
+        });
+    }
+
+    // Initialize fetch
+    fetchEvents();
+})();
+</script>
