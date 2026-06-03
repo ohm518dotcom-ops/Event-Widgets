@@ -296,6 +296,7 @@ body { background-color: transparent; margin: 0; padding: 0; }
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08) !important; 
     border-radius: 12px;
+}
 .ohm-donate-callout {
     background: rgba(255, 255, 255, 0.03);
     border: 1px dashed rgba(255, 255, 255, 0.15);
@@ -586,6 +587,18 @@ body { background-color: transparent; margin: 0; padding: 0; }
                 allEvents.sort((a,b) => a._dateObj - b._dateObj);
             }
             
+            // Check if there are any events for the current view mode
+            let viewEvents = allEvents.filter(e => e.status !== 'pending');
+            if (currentViewMode === 'ohm') {
+                viewEvents = viewEvents.filter(e => !e.email);
+            }
+            if (viewEvents.length === 0) {
+                if (containerEl) containerEl.style.display = 'none';
+                return;
+            } else {
+                if (containerEl) containerEl.style.display = '';
+            }
+
             renderCalendar();
             applyFilters();
         } catch(e) { 
