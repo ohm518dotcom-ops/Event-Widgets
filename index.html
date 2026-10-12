@@ -1893,7 +1893,9 @@
         function renderMapView(events) {
             if (map) map.remove();
             map = L.map('map-view-container').setView([42.6526, -73.7562], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=cb1_46il_1_b7dfb908bb20ac1620f2abb4', {
+                attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 20
+            }).addTo(map);
 
             // Group events by location
             const groups = {};

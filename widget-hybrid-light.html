@@ -790,7 +790,7 @@ body { background-color: #ffffff; margin: 0; padding: 24px; }
     function initMap() {
         leafletMap = L.map('ohm-map-container', { zoomControl: false }).setView([42.6526, -73.7562], 12);
         L.control.zoom({ position: 'topright' }).addTo(leafletMap);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=cb1_46il_1_b7dfb908bb20ac1620f2abb4', {
             attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 20
         }).addTo(leafletMap);
     }

@@ -664,8 +664,8 @@
         // Add zoom control to top right to keep it out of the way
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // CartoDB Dark Matter tiles - matches the dark aesthetic perfectly, no API key needed
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // CartoDB Dark Matter tiles - matches the dark aesthetic perfectly
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=cb1_46il_1_b7dfb908bb20ac1620f2abb4', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 20
